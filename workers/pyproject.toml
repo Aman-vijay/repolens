@@ -1,0 +1,11 @@
+[project]
+name = "repolens-workers"
+version = "0.1.0"
+description = "RepoLens ARQ background workers"
+requires-python = ">=3.11"
+dependencies = [
+    "repolens-db",
+]
+
+[tool.uv.sources]
+repolens-db = { workspace = true }

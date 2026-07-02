@@ -1,0 +1,42 @@
+# Architecture Decision Records
+
+An ADR records *why* a decision was made — not just what was decided. RepoLens uses ADRs for interview-prep value as much as for future maintainers: every non-trivial choice gets its trade-offs written down while the reasoning is fresh.
+
+## Conventions
+
+- **Numbering:** zero-padded, monotonic (`0001`, `0002`, ...). Never reuse a number.
+- **Filename:** `NNNN-kebab-case-title.md`
+- **Status:** `Proposed` → `Accepted` → (optionally) `Superseded` or `Deprecated`. Status lives in a header line.
+- **Supersession:** when a later ADR overturns an earlier one, mark the earlier ADR `Superseded by NNNN` and link forward.
+
+## Template
+
+    # ADR NNNN: Title
+
+    **Status:** Accepted
+    **Date:** YYYY-MM-DD
+
+    ## Context
+    (Why this decision is needed — forces, constraints, problem statement)
+
+    ## Decision
+    (What we decided, stated concretely)
+
+    ## Rejected alternatives
+    (Each real alternative considered, and the specific reason it was rejected)
+
+    ## Consequences
+    (What follows from this decision — positive, negative, neutral)
+
+    ## Revisit trigger
+    (Conditions under which we'd reopen this decision)
+
+## Index
+
+- 0001 — Monorepo layout, package topology, and dev/prod parity strategy
+- 0002 — Python tooling: uv workspace
+- 0003 — JS tooling: pnpm workspaces (no Turborepo)
+- 0004 — Managed data infra: Neon and Upstash
+- 0005 — Queue library: arq (maintenance-mode accepted)
+- 0006 — Secrets and environment management
+- 0007 — Hosting targets: Render and Vercel

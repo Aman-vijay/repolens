@@ -1,0 +1,11 @@
+[project]
+name = "repolens-api"
+version = "0.1.0"
+description = "RepoLens FastAPI backend"
+requires-python = ">=3.11"
+dependencies = [
+    "repolens-db",
+]
+
+[tool.uv.sources]
+repolens-db = { workspace = true }

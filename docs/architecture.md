@@ -53,5 +53,6 @@ The same code talks to the same *kind* of managed service in dev and prod; only 
 
 - **M0 — Foundation** (done): monorepo skeleton, workspace manifests, secrets contract, architecture docs and ADRs.
 - **M1 — Authentication** (done): Clerk auth, User/Project models, FastAPI backend, Next.js frontend, TanStack Query, CI build-smoke, Makefile targets.
-- **M2 — Repository upload** (current): Repository model, shallow clone service, metadata extraction, GitHub repo picker, admin dashboard, GitHub-only auth.
-- M3–M8 — see `README.md`.
+- **M2 — Repository upload** (done): Repository model, shallow clone service, metadata extraction, GitHub repo picker, admin dashboard, GitHub-only auth.
+- **M3 — Worker** (current): ARQ durable queue, progress tracking, `make worker` target.
+- M4–M8 — see `README.md`.

@@ -1,11 +1,12 @@
-.PHONY: help sync clean api web dev test lint typecheck build db-migrate db-revision
+.PHONY: help sync clean api web worker dev test lint typecheck build db-migrate db-revision
 
 help: ## Show available targets
 	@echo "RepoLens targets:"
 	@echo "  sync        Install all dependencies (uv workspace + pnpm workspace)"
 	@echo "  clean       Remove .venv, node_modules, and caches"
-	@echo "  api         Start FastAPI dev server (uses apps/api/.env)"
-	@echo "  web         Start Next.js dev server (uses apps/web/.env)"
+	@echo "  api         Start FastAPI dev server"
+	@echo "  web         Start Next.js dev server"
+	@echo "  worker      Start ARQ background worker"
 	@echo "  dev         Notes on running api + web together"
 	@echo "  test        Run test suites"
 	@echo "  lint        Run linters"
@@ -26,6 +27,9 @@ api: ## Start FastAPI dev server
 
 web: ## Start Next.js dev server
 	cd apps/web && pnpm dev
+
+worker: ## Start ARQ worker
+	cd workers && uv run arq worker.WorkerSettings
 
 dev: ## Explain how to run both dev servers
 	@echo "Run these in two separate terminals:"

@@ -180,7 +180,7 @@ export default function ProjectDetailPage({
 
                 {(repo.status === "pending" || repo.status === "cloning") && (
                   <div className="space-y-2">
-                    <Progress value={repo.status === "cloning" ? 30 : 0} />
+                    <Progress value={repo.progress} />
                     <p className="text-center text-xs text-muted-foreground">
                       {repo.status === "cloning" ? "Cloning repository\u2026" : "Queued\u2026"}
                     </p>

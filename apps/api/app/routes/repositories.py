@@ -1,14 +1,14 @@
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.deps import get_current_user, get_db_session
 from app.schemas import ProjectDetailOut, RepositoryCreate, RepositoryOut
-from app.services.clone import clone_and_extract
-from repolens_db import Project, Repository, User, get_async_session_factory
+from app.services.queue import enqueue_clone
+from repolens_db import Project, Repository, User
 
 router = APIRouter(tags=["repositories"])
 
@@ -51,7 +51,6 @@ async def _get_owned_project_or_404(
 async def attach_repository(
     project_id: uuid.UUID,
     body: RepositoryCreate,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -67,21 +66,12 @@ async def attach_repository(
         )
 
     url = _validate_url(body.url)
-    repo = Repository(project_id=project.id, url=url, status="pending")
+    repo = Repository(project_id=project.id, url=url, status="pending", progress=0)
     db.add(repo)
     await db.commit()
     await db.refresh(repo)
 
-    async_session = get_async_session_factory()
-    async def _run_clone():
-        async with async_session() as session:
-            result = await session.execute(
-                select(Repository).where(Repository.id == repo.id)
-            )
-            repo_obj = result.scalar_one()
-            await clone_and_extract(repo_obj, session)
-
-    background_tasks.add_task(_run_clone)
+    await enqueue_clone(repository_id=str(repo.id))
     return repo
 
 

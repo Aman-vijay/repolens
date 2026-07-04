@@ -5,7 +5,18 @@ description = "RepoLens ARQ background workers"
 requires-python = ">=3.11"
 dependencies = [
     "repolens-db",
+    "arq>=0.26",
+    "redis>=5.0",
+    "structlog>=24.1",
+    "python-dotenv>=1.0",
 ]
 
 [tool.uv.sources]
 repolens-db = { workspace = true }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]

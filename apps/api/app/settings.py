@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     clerk_webhook_secret: str = ""
     frontend_url: str = "http://localhost:3000"
     superadmin_clerk_user_id: str = ""
+    redis_url: str = ""
 
     @property
     def cors_origins(self) -> list[str]:

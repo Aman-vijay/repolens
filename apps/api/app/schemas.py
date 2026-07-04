@@ -40,6 +40,7 @@ class RepositoryOut(BaseModel):
     project_id: uuid.UUID
     url: str
     status: str
+    progress: int
     default_branch: str | None
     file_count: int
     total_size_bytes: int

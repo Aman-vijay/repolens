@@ -5,6 +5,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adhering to [Se
 
 ## [Unreleased]
 
+### Added — Milestone 3: Worker (ARQ queue)
+- ARQ worker package (`workers/worker.py`) with `clone_repository` job function, durable Redis queue, structlog logging, and `.env` loading.
+- `progress` integer column on `Repository` model (0–100) — worker writes at each phase (10 → 40 → 80 → 100).
+- Alembic migration `885ef361c0e5_add_progress_to_repositories` applied to Neon.
+- `app/services/queue.py` — lazy ARQ connection pool + `enqueue_clone(repository_id)`.
+- API `POST /api/projects/{id}/repository` now enqueues to ARQ instead of `BackgroundTasks`.
+- `make worker` Makefile target to start the ARQ worker process.
+- Frontend `Progress` bar uses actual `progress` value from the API (not hardcoded).
+- ADRs 0017–0019: ARQ durable queue, progress tracking via DB, worker as peer process.
+
 ### Added — Milestone 2: Repository upload
 - `Repository` model in `packages/db`: 1:1 with `Project`, JSONB `file_tree` + `languages` columns, status enum (pending/cloning/ready/failed).
 - `is_superuser` boolean column on `User` model, seeded via `SUPERADMIN_CLERK_USER_ID` env var.

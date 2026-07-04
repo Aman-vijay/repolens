@@ -11,6 +11,7 @@ export type Repository = {
   project_id: string;
   url: string;
   status: string;
+  progress: number;
   default_branch: string | null;
   file_count: number;
   total_size_bytes: number;

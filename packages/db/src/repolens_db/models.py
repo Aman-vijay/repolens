@@ -78,10 +78,10 @@ class Repository(Base):
     status: Mapped[str] = mapped_column(
         String(32), server_default="pending", nullable=False, default="pending"
     )
-    progress: Mapped[int] = mapped_column(default=0, nullable=False)
+    progress: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
     default_branch: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    file_count: Mapped[int] = mapped_column(default=0, nullable=False)
-    total_size_bytes: Mapped[int] = mapped_column(default=0, nullable=False)
+    file_count: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+    total_size_bytes: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
     languages: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     file_tree: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

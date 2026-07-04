@@ -1,3 +1,11 @@
+"""Authentication dependencies for FastAPI.
+
+Optimizations:
+- Module-level Clerk client singleton (not created per request)
+- SELECT-first strategy: skip the upsert write if the user already exists
+  (the common case after the first request)
+- Cache user in request state to avoid duplicate lookups per request
+"""
 import asyncio
 
 import httpx
@@ -12,6 +20,18 @@ from app.settings import get_settings
 from repolens_db import User, get_async_session_factory
 
 
+_clerk_client: Clerk | None = None
+
+
+def _get_clerk_client() -> Clerk:
+    """Return a module-level Clerk client singleton."""
+    global _clerk_client
+    if _clerk_client is None:
+        settings = get_settings()
+        _clerk_client = Clerk(bearer_auth=settings.clerk_secret_key)
+    return _clerk_client
+
+
 async def get_db_session() -> AsyncSession:
     async with get_async_session_factory()() as session:
         yield session
@@ -21,8 +41,13 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> User:
+    # Cache user on the request to avoid duplicate lookups within one request
+    cached = getattr(request.state, "_current_user", None)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
-    clerk = Clerk(bearer_auth=settings.clerk_secret_key)
+    clerk = _get_clerk_client()
 
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -58,6 +83,18 @@ async def get_current_user(
             detail="No user ID in token payload",
         )
 
+    # --- Fast path: SELECT the user first (avoids a write on every read request) ---
+    result = await db.execute(
+        select(User).where(User.clerk_user_id == clerk_user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if user is not None:
+        # User exists — no need to upsert. Cache and return immediately.
+        request.state._current_user = user
+        return user
+
+    # --- Slow path: first time we see this user — upsert ---
     email = request_state.payload.get("email", "")
     if not email:
         try:
@@ -67,7 +104,6 @@ async def get_current_user(
             if clerk_user.email_addresses:
                 email = clerk_user.email_addresses[0].email_address
         except Exception:
-            # Keep auth working even if the secondary Clerk user lookup fails.
             email = ""
 
     if not email:
@@ -82,25 +118,17 @@ async def get_current_user(
             email=email,
             is_superuser=is_superuser,
         )
-        .on_conflict_do_update(
-            index_elements=["clerk_user_id"],
-            set_={
-                "email": email,
-                "is_superuser": is_superuser,
-            },
-        )
-        .returning(User)
+        .on_conflict_do_nothing(index_elements=["clerk_user_id"])
     )
-    result = await db.execute(stmt)
+    await db.execute(stmt)
     await db.commit()
-    user = result.scalar_one_or_none()
 
-    if user is None:
-        result = await db.execute(
-            select(User).where(User.clerk_user_id == clerk_user_id)
-        )
-        user = result.scalar_one()
-
+    # Now SELECT the user (handles the race where conflict happened)
+    result = await db.execute(
+        select(User).where(User.clerk_user_id == clerk_user_id)
+    )
+    user = result.scalar_one()
+    request.state._current_user = user
     return user
 
 

@@ -51,5 +51,7 @@ The same code talks to the same *kind* of managed service in dev and prod; only 
 
 ## Milestone progress
 
-- **M0 — Foundation** (current): monorepo skeleton, workspace manifests, secrets contract, architecture docs and ADRs. No application code.
-- M1–M8 — see `README.md`.
+- **M0 — Foundation** (done): monorepo skeleton, workspace manifests, secrets contract, architecture docs and ADRs.
+- **M1 — Authentication** (done): Clerk auth, User/Project models, FastAPI backend, Next.js frontend, TanStack Query, CI build-smoke, Makefile targets.
+- **M2 — Repository upload** (current): Repository model, shallow clone service, metadata extraction, GitHub repo picker, admin dashboard, GitHub-only auth.
+- M3–M8 — see `README.md`.

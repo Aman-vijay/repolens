@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.deps import get_current_user, get_db_session
 from app.schemas import ProjectDetailOut, RepositoryCreate, RepositoryOut
@@ -27,13 +28,15 @@ async def _get_owned_project_or_404(
     project_id: uuid.UUID,
     current_user: User,
     db: AsyncSession,
+    with_repository: bool = False,
 ) -> Project:
-    result = await db.execute(
-        select(Project).where(
-            Project.id == project_id,
-            Project.user_id == current_user.id,
-        )
+    stmt = select(Project).where(
+        Project.id == project_id,
+        Project.user_id == current_user.id,
     )
+    if with_repository:
+        stmt = stmt.options(selectinload(Project.repository))
+    result = await db.execute(stmt)
     project = result.scalar_one_or_none()
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
@@ -114,5 +117,7 @@ async def get_project_detail(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ):
-    project = await _get_owned_project_or_404(project_id, current_user, db)
+    project = await _get_owned_project_or_404(
+        project_id, current_user, db, with_repository=True
+    )
     return project

@@ -1,21 +1,30 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   CheckCircle2,
   Clock,
   Loader2,
   XCircle,
+  GitBranch,
+  Star,
 } from "lucide-react";
 
 import { FileTree } from "@/components/file-tree";
 import { GitHubRepoPicker } from "@/components/github-repo-picker";
 import { LanguageBreakdown } from "@/components/language-breakdown";
 import { Navbar } from "@/components/navbar";
-import { useAttachRepository, useProject, useRepository } from "@/lib/queries";
+import { useAttachRepository, useGitHubRepos, useProject, useRepository } from "@/lib/queries";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -25,24 +34,22 @@ function formatBytes(bytes: number): string {
 
 function StatusBadge({ status }: { status: string }) {
   const icons: Record<string, React.ReactNode> = {
-    pending: <Clock className="h-3.5 w-3.5" />,
-    cloning: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
-    ready: <CheckCircle2 className="h-3.5 w-3.5" />,
-    failed: <XCircle className="h-3.5 w-3.5" />,
+    pending: <Clock className="h-3 w-3" aria-hidden="true" />,
+    cloning: <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />,
+    ready: <CheckCircle2 className="h-3 w-3" aria-hidden="true" />,
+    failed: <XCircle className="h-3 w-3" aria-hidden="true" />,
   };
-  const colors: Record<string, string> = {
-    pending: "text-yellow-400 bg-yellow-400/10",
-    cloning: "text-blue-400 bg-blue-400/10",
-    ready: "text-green-400 bg-green-400/10",
-    failed: "text-red-400 bg-red-400/10",
+  const variants: Record<string, "warning" | "info" | "success" | "destructive"> = {
+    pending: "warning",
+    cloning: "info",
+    ready: "success",
+    failed: "destructive",
   };
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[status] ?? ""}`}
-    >
+    <Badge variant={variants[status] ?? "secondary"}>
       {icons[status]}
       {status}
-    </span>
+    </Badge>
   );
 }
 
@@ -63,7 +70,8 @@ export default function ProjectDetailPage({
       <>
         <Navbar />
         <main className="mx-auto max-w-4xl px-6 py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="mt-4 h-20 w-full" />
         </main>
       </>
     );
@@ -74,13 +82,10 @@ export default function ProjectDetailPage({
       <>
         <Navbar />
         <main className="mx-auto max-w-4xl px-6 py-8">
-          <p className="text-text-secondary">Project not found.</p>
-          <Link
-            href="/dashboard"
-            className="mt-4 inline-block text-sm text-accent hover:underline"
-          >
-            Back to dashboard
-          </Link>
+          <p className="text-muted-foreground">Project not found.</p>
+          <Button asChild variant="link" className="mt-4">
+            <Link href="/dashboard">Back to dashboard</Link>
+          </Button>
         </main>
       </>
     );
@@ -90,116 +95,126 @@ export default function ProjectDetailPage({
     <>
       <Navbar />
       <main className="mx-auto max-w-4xl px-6 py-8">
-        <Link
-          href="/dashboard"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Link>
+        <Button asChild variant="ghost" size="sm" className="mb-4">
+          <Link href="/dashboard">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back
+          </Link>
+        </Button>
 
-        <h1 className="text-2xl font-bold text-text-primary">{project.name}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
         {project.description && (
-          <p className="mt-1 text-text-secondary">{project.description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
         )}
 
-        {/* Repository section */}
         <div className="mt-8 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Repository
           </h2>
 
           {!repo && !showPicker && (
-            <div className="space-y-4 rounded-lg border border-border bg-bg-card p-6">
-              <div className="flex gap-3">
-                <input
-                  type="url"
-                  placeholder="https://github.com/user/repo"
-                  value={manualUrl}
-                  onChange={(e) => setManualUrl(e.target.value)}
-                  className="flex-1 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
-                <button
-                  onClick={() =>
-                    attachMutation.mutate({ projectId, url: manualUrl })
-                  }
-                  disabled={!manualUrl.trim() || attachMutation.isPending}
-                  className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-                >
-                  {attachMutation.isPending ? "Attaching..." : "Clone"}
-                </button>
-              </div>
-              {attachMutation.isError && (
-                <p className="text-sm text-red-400">
-                  Failed to attach repository.
-                </p>
-              )}
-              <div className="flex items-center gap-2 text-xs text-text-muted">
-                <span>or</span>
-                <button
-                  onClick={() => setShowPicker(true)}
-                  className="text-accent hover:underline"
-                >
-                  Import from GitHub
-                </button>
-              </div>
-            </div>
+            <Card>
+              <CardContent className="space-y-4 p-6">
+                <div className="space-y-2">
+                  <Label htmlFor="repo-url">Git URL</Label>
+                  <div className="flex gap-3">
+                    <Input
+                      id="repo-url"
+                      type="url"
+                      placeholder="https://github.com/user/repo"
+                      value={manualUrl}
+                      onChange={(e) => setManualUrl(e.target.value)}
+                      autoComplete="off"
+                    />
+                    <Button
+                      onClick={() => {
+                        attachMutation.mutate(
+                          { projectId, url: manualUrl },
+                          {
+                            onSuccess: () => {
+                              setManualUrl("");
+                              toast.success("Repository attached. Cloning\u2026");
+                            },
+                            onError: () => toast.error("Failed to attach repository."),
+                          },
+                        );
+                      }}
+                      disabled={!manualUrl.trim() || attachMutation.isPending}
+                    >
+                      {attachMutation.isPending ? "Attaching\u2026" : "Clone"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>or</span>
+                  <Button variant="link" size="sm" className="px-1" onClick={() => setShowPicker(true)}>
+                    Import from GitHub
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {showPicker && !repo && (
-            <GitHubRepoPicker
-              projectId={projectId}
-              onClose={() => setShowPicker(false)}
-            />
+            <GitHubRepoPicker projectId={projectId} onClose={() => setShowPicker(false)} />
           )}
 
           {repo && (
-            <div className="space-y-6 rounded-lg border border-border bg-bg-card p-6">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="truncate font-mono text-sm text-text-primary">
-                    {repo.url}
-                  </p>
-                  {repo.default_branch && (
-                    <p className="mt-0.5 text-xs text-text-muted">
-                      branch: {repo.default_branch}
-                    </p>
-                  )}
-                </div>
-                <StatusBadge status={repo.status} />
-              </div>
-
-              {repo.status === "failed" && repo.error_message && (
-                <p className="text-sm text-red-400">{repo.error_message}</p>
-              )}
-
-              {repo.status === "ready" && (
-                <>
-                  <div className="flex gap-6 text-sm text-text-secondary">
-                    <span>{repo.file_count} files</span>
-                    <span>{formatBytes(repo.total_size_bytes)}</span>
+            <Card>
+              <CardContent className="space-y-6 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-sm">{repo.url}</p>
+                    {repo.default_branch && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        branch: {repo.default_branch}
+                      </p>
+                    )}
                   </div>
+                  <StatusBadge status={repo.status} />
+                </div>
 
-                  {repo.languages && (
-                    <div>
-                      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
-                        Languages
-                      </h3>
-                      <LanguageBreakdown languages={repo.languages} />
-                    </div>
-                  )}
+                {repo.status === "failed" && repo.error_message && (
+                  <p className="text-sm text-destructive">{repo.error_message}</p>
+                )}
 
-                  {repo.file_tree && (
-                    <div>
-                      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
-                        File tree
-                      </h3>
-                      <FileTree tree={repo.file_tree} />
+                {(repo.status === "pending" || repo.status === "cloning") && (
+                  <div className="space-y-2">
+                    <Progress value={repo.status === "cloning" ? 30 : 0} />
+                    <p className="text-center text-xs text-muted-foreground">
+                      {repo.status === "cloning" ? "Cloning repository\u2026" : "Queued\u2026"}
+                    </p>
+                  </div>
+                )}
+
+                {repo.status === "ready" && (
+                  <>
+                    <div className="flex gap-6 text-sm tabular-nums text-muted-foreground">
+                      <span>{repo.file_count} files</span>
+                      <span>{formatBytes(repo.total_size_bytes)}</span>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
+
+                    {repo.languages && (
+                      <div>
+                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Languages
+                        </h3>
+                        <LanguageBreakdown languages={repo.languages} />
+                      </div>
+                    )}
+
+                    {repo.file_tree && (
+                      <div>
+                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          File Tree
+                        </h3>
+                        <FileTree tree={repo.file_tree} />
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       </main>

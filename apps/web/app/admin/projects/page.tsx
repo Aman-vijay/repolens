@@ -1,9 +1,17 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-
 import { Navbar } from "@/components/navbar";
 import { useAdminProjects } from "@/lib/queries";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function AdminProjectsPage() {
   const { data: projects, isPending, isError } = useAdminProjects();
@@ -13,7 +21,7 @@ export default function AdminProjectsPage() {
       <>
         <Navbar />
         <main className="mx-auto max-w-4xl px-6 py-8">
-          <p className="text-red-400">Access denied.</p>
+          <p className="text-sm text-destructive">Access denied.</p>
         </main>
       </>
     );
@@ -23,66 +31,60 @@ export default function AdminProjectsPage() {
     <>
       <Navbar />
       <main className="mx-auto max-w-4xl px-6 py-8">
-        <h1 className="text-2xl font-bold text-text-primary">
-          All Projects
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">All Projects</h1>
 
         {isPending ? (
-          <div className="mt-8 flex justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
+          <div className="mt-6 space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
           </div>
         ) : (
           <div className="mt-6 overflow-hidden rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border bg-bg-card">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-text-muted">
-                    Name
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-text-muted">
-                    Owner
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-text-muted">
-                    Repo
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-text-muted">
-                    Created
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Repository</TableHead>
+                  <TableHead>Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {projects?.map((project) => (
-                  <tr key={project.id} className="hover:bg-white/5">
-                    <td className="px-4 py-3 text-text-primary">
-                      {project.name}
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary">
+                  <TableRow key={project.id}>
+                    <TableCell className="font-medium">{project.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
                       {project.user_email}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       {project.repo_status ? (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs ${
+                        <Badge
+                          variant={
                             project.repo_status === "ready"
-                              ? "bg-green-400/10 text-green-400"
+                              ? "success"
                               : project.repo_status === "failed"
-                                ? "bg-red-400/10 text-red-400"
-                                : "bg-blue-400/10 text-blue-400"
-                          }`}
+                                ? "destructive"
+                                : "info"
+                          }
                         >
                           {project.repo_status}
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="text-text-muted">none</span>
+                        <span className="text-muted-foreground">none</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-text-muted">
-                      {new Date(project.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(project.created_at).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </main>

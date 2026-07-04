@@ -23,6 +23,7 @@ const LANGUAGE_COLORS: Record<string, string> = {
   Svelte: "#ff3e00",
   SQL: "#e38c00",
   Docker: "#384d54",
+  Config: "#6b7280",
 };
 
 export function LanguageBreakdown({
@@ -41,7 +42,7 @@ export function LanguageBreakdown({
 
   return (
     <div className="space-y-3">
-      <div className="flex h-2 overflow-hidden rounded-full">
+      <div className="flex h-2 overflow-hidden rounded-full" role="img" aria-label="Language breakdown">
         {sorted.map(([lang, stats]) => (
           <div
             key={lang}
@@ -59,9 +60,10 @@ export function LanguageBreakdown({
             <span
               className="h-3 w-3 shrink-0 rounded-sm"
               style={{ backgroundColor: LANGUAGE_COLORS[lang] ?? "#6b7280" }}
+              aria-hidden="true"
             />
-            <span className="truncate text-text-primary">{lang}</span>
-            <span className="ml-auto shrink-0 text-xs text-text-muted">
+            <span className="truncate">{lang}</span>
+            <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
               {((stats.bytes / totalBytes) * 100).toFixed(1)}%
             </span>
           </div>

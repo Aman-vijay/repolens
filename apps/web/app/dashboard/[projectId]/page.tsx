@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ import {
   useRepository,
   useDeleteProject,
 } from "@/lib/queries";
+import { useAppStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,19 +66,40 @@ export default function ProjectDetailPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = use(params);
-  const { data: project, isPending: projectLoading } = useProject(projectId);
-  const { data: repo } = useRepository(projectId);
+  const { data: queryProject, isPending: projectLoading } = useProject(projectId);
+  const { data: queryRepo } = useRepository(projectId);
   const attachMutation = useAttachRepository();
   const deleteMutation = useDeleteProject();
   const router = useRouter();
-  const [showPicker, setShowPicker] = useState(false);
+  
+  const { 
+    activeProject, setActiveProject, 
+    activeRepository, setActiveRepository,
+    isRepoPickerOpen, setRepoPickerOpen 
+  } = useAppStore();
+
   const [manualUrl, setManualUrl] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Sync fresh React Query data into Zustand
+  useEffect(() => {
+    if (queryProject) setActiveProject(queryProject);
+  }, [queryProject, setActiveProject]);
+
+  useEffect(() => {
+    if (queryRepo) setActiveRepository(queryRepo);
+  }, [queryRepo, setActiveRepository]);
+
+  // Use cached Zustand data for instant loads if the ID matches
+  const project = (activeProject?.id === projectId) ? activeProject : queryProject;
+  const repo = (activeRepository?.project_id === projectId) ? activeRepository : queryRepo;
+  const isLoading = projectLoading && !project;
 
   const handleDelete = () => {
     deleteMutation.mutate(projectId, {
       onSuccess: () => {
         toast.success("Project deleted successfully.");
+        useAppStore.getState().clearActiveState(); // clear cache
         router.push("/dashboard");
       },
       onError: (err) => {
@@ -89,7 +111,7 @@ export default function ProjectDetailPage({
     });
   };
 
-  if (projectLoading) {
+  if (isLoading) {
     return (
       <>
         <Navbar />
@@ -151,7 +173,7 @@ export default function ProjectDetailPage({
             Repository
           </h2>
 
-          {!repo && !showPicker && (
+          {!repo && !isRepoPickerOpen && (
             <Card>
               <CardContent className="space-y-4 p-6">
                 <div className="space-y-2">
@@ -186,7 +208,7 @@ export default function ProjectDetailPage({
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>or</span>
-                  <Button variant="link" size="sm" className="px-1" onClick={() => setShowPicker(true)}>
+                  <Button variant="link" size="sm" className="px-1" onClick={() => setRepoPickerOpen(true)}>
                     Import from GitHub
                   </Button>
                 </div>
@@ -194,8 +216,8 @@ export default function ProjectDetailPage({
             </Card>
           )}
 
-          {showPicker && !repo && (
-            <GitHubRepoPicker projectId={projectId} onClose={() => setShowPicker(false)} />
+          {isRepoPickerOpen && !repo && (
+            <GitHubRepoPicker projectId={projectId} onClose={() => setRepoPickerOpen(false)} />
           )}
 
           {repo && (

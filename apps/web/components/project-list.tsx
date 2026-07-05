@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight, Folder } from "lucide-react";
 
 import { useProjects } from "@/lib/queries";
+import { useAppStore } from "@/lib/store";
 import type { Project } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,9 +48,16 @@ export function ProjectList() {
 }
 
 function ProjectCard({ project }: { project: Project }) {
+  const setActiveProject = useAppStore((state) => state.setActiveProject);
+  const clearActiveState = useAppStore((state) => state.clearActiveState);
+
   return (
     <Link
       href={`/dashboard/${project.id}`}
+      onClick={() => {
+        clearActiveState(); // Clear previous repo state
+        setActiveProject(project); // Pre-fill new project
+      }}
       className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Folder className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />

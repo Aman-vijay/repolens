@@ -1,45 +1,50 @@
-import { create } from "zustand";
+import { create, StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Project, Repository } from "@/lib/api";
 
-type AppState = {
-  // We can cache the active project and repository here for instant loads
-  // while React Query fetches fresh data in the background
+// --- Project Slice ---
+export interface ProjectSlice {
   activeProject: Project | null;
   activeRepository: Repository | null;
-  
-  // UI States
-  isRepoPickerOpen: boolean;
-  globalSearchQuery: string;
-
-  // Actions
   setActiveProject: (project: Project | null) => void;
   setActiveRepository: (repo: Repository | null) => void;
+  clearActiveState: () => void;
+}
+
+const createProjectSlice: StateCreator<ProjectSlice & UISlice, [], [], ProjectSlice> = (set) => ({
+  activeProject: null,
+  activeRepository: null,
+  setActiveProject: (project) => set({ activeProject: project }),
+  setActiveRepository: (repo) => set({ activeRepository: repo }),
+  clearActiveState: () => set({ activeProject: null, activeRepository: null }),
+});
+
+// --- UI Slice ---
+export interface UISlice {
+  isRepoPickerOpen: boolean;
+  globalSearchQuery: string;
   setRepoPickerOpen: (isOpen: boolean) => void;
   setGlobalSearchQuery: (query: string) => void;
-  
-  // Reset
-  clearActiveState: () => void;
-};
+}
+
+const createUISlice: StateCreator<ProjectSlice & UISlice, [], [], UISlice> = (set) => ({
+  isRepoPickerOpen: false,
+  globalSearchQuery: "",
+  setRepoPickerOpen: (isOpen) => set({ isRepoPickerOpen: isOpen }),
+  setGlobalSearchQuery: (query) => set({ globalSearchQuery: query }),
+});
+
+// --- Root Store ---
+export type AppState = ProjectSlice & UISlice;
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
-      activeProject: null,
-      activeRepository: null,
-      isRepoPickerOpen: false,
-      globalSearchQuery: "",
-
-      setActiveProject: (project) => set({ activeProject: project }),
-      setActiveRepository: (repo) => set({ activeRepository: repo }),
-      setRepoPickerOpen: (isOpen) => set({ isRepoPickerOpen: isOpen }),
-      setGlobalSearchQuery: (query) => set({ globalSearchQuery: query }),
-      
-      clearActiveState: () => set({ activeProject: null, activeRepository: null }),
+    (...a) => ({
+      ...createProjectSlice(...a),
+      ...createUISlice(...a),
     }),
     {
       name: "repolens-storage",
-      // Only persist certain fields to localStorage so they load instantly on refresh
       partialize: (state) => ({ 
         activeProject: state.activeProject,
         activeRepository: state.activeRepository,

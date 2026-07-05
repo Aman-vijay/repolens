@@ -40,3 +40,16 @@ An ADR records *why* a decision was made — not just what was decided. RepoLens
 - 0005 — Queue library: arq (maintenance-mode accepted)
 - 0006 — Secrets and environment management
 - 0007 — Hosting targets: Render and Vercel
+- 0008 — Frontend framework: Next.js 15 App Router
+- 0009 — Auth architecture: Clerk with lazy upsert fallback
+- 0010 — Client data fetching: TanStack Query
+- 0011 — Dev ergonomics: Makefile and CI build-smoke
+- 0012 — Repository data model: JSONB metadata on repositories
+- 0013 — Clone service: shallow clone with BackgroundTasks
+- 0014 — GitHub OAuth scope and repository listing
+- 0015 — Superadmin via is_superuser env-var seed
+- 0016 — GitHub-only auth with custom sign-in
+- 0017 — ARQ durable queue replacing BackgroundTasks
+- 0018 — Progress tracking via DB column
+- 0019 — Worker as peer process preserving topology
+- 0020 — Semantic code search via chunking, embeddings, and pgvector

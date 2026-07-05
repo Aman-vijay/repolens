@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   attachRepository,
   createProject,
+  deleteProject,
   fetchAdminProjects,
   fetchAdminStats,
   fetchAdminUsers,
@@ -13,6 +14,7 @@ import {
   fetchProject,
   fetchProjects,
   fetchRepository,
+  searchProjectCode,
 } from "@/lib/api";
 
 export function useProjects() {
@@ -30,6 +32,18 @@ export function useCreateProject() {
   return useMutation({
     mutationFn: (input: { name: string; description?: string }) =>
       createProject(getToken, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId: string) => deleteProject(getToken, projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
@@ -102,5 +116,21 @@ export function useAdminProjects() {
   return useQuery({
     queryKey: ["admin-projects"],
     queryFn: () => fetchAdminProjects(getToken),
+  });
+}
+
+export function useSearchCode() {
+  const { getToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      query,
+      limit,
+    }: {
+      projectId: string;
+      query: string;
+      limit?: number;
+    }) => searchProjectCode(getToken, projectId, { query, limit }),
   });
 }

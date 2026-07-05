@@ -29,6 +29,11 @@ from app.schemas.admin import (
     AdminUserOut,
 )
 from app.schemas.api_response import APIResponse, APIError
+from app.schemas.search import (
+    RATE_LIMIT as SEARCH_RATE_LIMIT,
+    SearchHitOut,
+    SearchQuery,
+)
 
 __all__ = [
     "ProjectCreate",
@@ -42,4 +47,7 @@ __all__ = [
     "AdminProjectOut",
     "APIResponse",
     "APIError",
+    "SearchQuery",
+    "SearchHitOut",
+    "SEARCH_RATE_LIMIT",
 ]

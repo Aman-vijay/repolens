@@ -4,7 +4,18 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+# settings.py is at: repolens/apps/api/app/settings.py
+# .parent              → repolens/apps/api/app/
+# .parent.parent       → repolens/apps/api/
+# .parent.parent.parent → repolens/apps/
+# .parent×4            → repolens/           ← workspace root
+root_env = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+app_env = Path(__file__).resolve().parent.parent / ".env"
+
+if root_env.exists():
+    load_dotenv(root_env)
+if app_env.exists():
+    load_dotenv(app_env)
 
 
 class Settings(BaseSettings):

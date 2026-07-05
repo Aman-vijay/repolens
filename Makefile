@@ -29,7 +29,7 @@ web: ## Start Next.js dev server
 	cd apps/web && pnpm dev
 
 worker: ## Start ARQ worker
-	cd workers && uv run arq worker.WorkerSettings
+	uv run arq workers.worker.WorkerSettings
 
 dev: ## Explain how to run both dev servers
 	@echo "Run these in two separate terminals:"

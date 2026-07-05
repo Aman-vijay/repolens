@@ -4,7 +4,7 @@ A tool that helps engineers understand and plan changes in unfamiliar codebases.
 
 ## Status
 
-Foundation milestone (M0) — monorepo skeleton, workspace manifests, secrets contract, and architecture docs. No runnable application code yet.
+Current implementation is in Milestone 4 (Embedding): repository cloning, metadata extraction, ARQ worker orchestration, code chunking, embeddings storage, and dashboard semantic code search are in place. Milestone 5 (AI summary) is the next major build step.
 
 ## Stack
 

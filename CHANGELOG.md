@@ -5,6 +5,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adhering to [Se
 
 ## [Unreleased]
 
+### Added — Milestone 4: Embedding + semantic code search
+- `CodeChunk` model in `packages/db` with pgvector embeddings, per-file chunk metadata, and repository ownership.
+- Alembic migration `85bb31a7cdaa_add_code_chunks_table` creating `code_chunks`, repository index, and HNSW cosine index.
+- Tree-sitter based chunking service in `workers/chunk_service.py` with fixed-line fallback for unsupported grammars.
+- OpenAI embedding service in `workers/embed_service.py` using `text-embedding-3-small` batching.
+- ARQ worker pipeline now runs clone → metadata → chunk → embed → store before marking the repository ready.
+- Semantic search API: `POST /api/projects/{id}/search` performing query embedding + pgvector cosine similarity search scoped to the project's repository.
+- Project detail dashboard now includes semantic code search results with file path, line range, score, and snippet preview.
+- ADR 0020 documenting the semantic code search pipeline.
+
 ### Added — Milestone 3: Worker (ARQ queue)
 - ARQ worker package (`workers/worker.py`) with `clone_repository` job function, durable Redis queue, structlog logging, and `.env` loading.
 - `progress` integer column on `Repository` model (0–100) — worker writes at each phase (10 → 40 → 80 → 100).

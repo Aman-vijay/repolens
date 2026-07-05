@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, Field
+from app.schemas.repository import RepositoryOut
 
 
 class ProjectCreate(BaseModel):
@@ -30,7 +31,7 @@ class ProjectDetailOut(BaseModel):
     description: str | None
     created_at: datetime
     updated_at: datetime
-    repository: "RepositoryOut | None" = None
+    repository: RepositoryOut | None = None
 
     model_config = {"from_attributes": True}
 

@@ -28,7 +28,7 @@ export function GitHubRepoPicker({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base">Import from GitHub</CardTitle>
         <Button variant="ghost" size="sm" onClick={onClose}>
           Cancel

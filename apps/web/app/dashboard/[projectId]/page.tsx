@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -9,18 +10,23 @@ import {
   Clock,
   Loader2,
   XCircle,
-  GitBranch,
-  Star,
+  Trash2,
 } from "lucide-react";
 
 import { FileTree } from "@/components/file-tree";
 import { GitHubRepoPicker } from "@/components/github-repo-picker";
 import { LanguageBreakdown } from "@/components/language-breakdown";
 import { Navbar } from "@/components/navbar";
-import { useAttachRepository, useGitHubRepos, useProject, useRepository } from "@/lib/queries";
+import { ProjectCodeSearch } from "@/components/project-code-search";
+import {
+  useAttachRepository,
+  useProject,
+  useRepository,
+  useDeleteProject,
+} from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -62,8 +68,30 @@ export default function ProjectDetailPage({
   const { data: project, isPending: projectLoading } = useProject(projectId);
   const { data: repo } = useRepository(projectId);
   const attachMutation = useAttachRepository();
+  const deleteMutation = useDeleteProject();
+  const router = useRouter();
   const [showPicker, setShowPicker] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
+
+  const handleDelete = () => {
+    if (
+      confirm(
+        "Are you sure you want to delete this project? This will permanently delete all metadata and search embeddings."
+      )
+    ) {
+      deleteMutation.mutate(projectId, {
+        onSuccess: () => {
+          toast.success("Project deleted successfully.");
+          router.push("/dashboard");
+        },
+        onError: (err) => {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to delete project."
+          );
+        },
+      });
+    }
+  };
 
   if (projectLoading) {
     return (
@@ -102,10 +130,35 @@ export default function ProjectDetailPage({
           </Link>
         </Button>
 
-        <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
-        {project.description && (
-          <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
-        )}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+            {project.description && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {project.description}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="shrink-0"
+          >
+            {deleteMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting…
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Project
+              </>
+            )}
+          </Button>
+        </div>
 
         <div className="mt-8 space-y-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -211,6 +264,8 @@ export default function ProjectDetailPage({
                         <FileTree tree={repo.file_tree} />
                       </div>
                     )}
+
+                    <ProjectCodeSearch projectId={projectId} />
                   </>
                 )}
               </CardContent>

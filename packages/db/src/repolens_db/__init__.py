@@ -1,9 +1,10 @@
 from repolens_db.base import Base
 from repolens_db.engine import get_async_session_factory, get_engine
-from repolens_db.models import Project, Repository, User
+from repolens_db.models import CodeChunk, Project, Repository, User
 
 __all__ = [
     "Base",
+    "CodeChunk",
     "Project",
     "Repository",
     "User",

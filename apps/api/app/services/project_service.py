@@ -1,6 +1,7 @@
 """Project service — business logic for project CRUD operations."""
 import uuid
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -45,7 +46,10 @@ async def get_owned_project_or_404(
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
     if project is None:
-        raise ValueError("Project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
     return project
 
 
@@ -57,3 +61,13 @@ async def get_project_detail(
     return await get_owned_project_or_404(
         db, project_id, user, with_repository=True
     )
+
+
+async def delete_project(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    user: User,
+) -> None:
+    project = await get_owned_project_or_404(db, project_id, user, with_repository=True)
+    await db.delete(project)
+    await db.commit()

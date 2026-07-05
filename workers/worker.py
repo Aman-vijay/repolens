@@ -1,29 +1,35 @@
 """ARQ worker for RepoLens background jobs.
 
 Started with: arq workers.worker.WorkerSettings
+
+Pipeline: clone → extract metadata → chunk → embed → store
 """
 import asyncio
 import os
 import shutil
 import tempfile
+import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
 import structlog
-from arq import cron
 from arq.connections import RedisSettings
 from dotenv import load_dotenv
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repolens_db import Repository, get_async_session_factory
+from repolens_db import CodeChunk, Repository, get_async_session_factory
+
+from workers.chunk_service import chunk_repository
+from workers.embed_service import embed_texts
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 logger = structlog.get_logger()
 
 CLONE_TIMEOUT_SECONDS = 30
-MAX_TREE_DEPTH = 4
+MAX_TREE_DEPTH = 10
+MAX_CHUNKS_PER_REPO = 5000
 SKIP_DIRS = {
     ".git", "node_modules", ".venv", "venv", "__pycache__",
     ".next", "dist", "build", ".tox", ".mypy_cache",
@@ -118,17 +124,54 @@ def _extract_metadata(repo_dir: Path) -> dict:
     }
 
 
+async def _chunk_and_embed(
+    repo_dir: Path,
+    repository_id: uuid.UUID,
+    session: AsyncSession,
+) -> int:
+    """Chunk repo files, generate embeddings, and store in DB. Returns chunk count."""
+    chunks = chunk_repository(repo_dir)
+    if len(chunks) > MAX_CHUNKS_PER_REPO:
+        chunks = chunks[:MAX_CHUNKS_PER_REPO]
+        logger.warning("chunk_limit_reached", repository_id=str(repository_id), limit=MAX_CHUNKS_PER_REPO)
+
+    if not chunks:
+        return 0
+
+    texts = [c["content"] for c in chunks]
+    logger.info("embedding_start", repository_id=str(repository_id), chunk_count=len(texts))
+    embeddings = await asyncio.to_thread(embed_texts, texts)
+    logger.info("embedding_done", repository_id=str(repository_id), count=len(embeddings))
+
+    for chunk_data, embedding in zip(chunks, embeddings, strict=False):
+        db_chunk = CodeChunk(
+            repository_id=repository_id,
+            file_path=chunk_data["file_path"],
+            language=chunk_data["language"],
+            start_line=chunk_data["start_line"],
+            end_line=chunk_data["end_line"],
+            content=chunk_data["content"],
+            chunk_index=chunk_data["chunk_index"],
+            embedding=embedding,
+        )
+        session.add(db_chunk)
+
+    await session.commit()
+    return len(chunks)
+
+
 async def clone_repository(
     ctx: dict,
     repository_id: str,
 ) -> None:
-    """Clone a repository and extract its metadata.
+    """Clone a repository, extract metadata, chunk, and embed.
 
     Progress phases:
-      0  - queued
-      10 - cloning started
-      40 - clone complete, extracting metadata
-      80 - metadata extracted, saving
+       0  - queued
+      10  - cloning started
+      40  - clone complete, extracting metadata
+      60  - metadata done, chunking + embedding
+      90  - embeddings stored
       100 - done
     """
     logger.info("job_started", job="clone_repository", repository_id=repository_id)
@@ -146,6 +189,7 @@ async def clone_repository(
             return
 
         try:
+            # Phase 1: Clone
             repo.status = "cloning"
             repo.progress = 10
             await session.commit()
@@ -155,29 +199,41 @@ async def clone_repository(
 
             branch = await _run_git_clone(repo.url, repo_dir)
 
+            # Phase 2: Extract metadata
             repo.progress = 40
             await session.commit()
 
             metadata = _extract_metadata(Path(repo_dir))
 
-            repo.progress = 80
-            await session.commit()
-
-            repo.status = "ready"
-            repo.progress = 100
             repo.default_branch = branch
             repo.file_count = metadata["file_count"]
             repo.total_size_bytes = metadata["total_size_bytes"]
             repo.languages = metadata["languages"]
             repo.file_tree = metadata["file_tree"]
-            repo.error_message = None
+            repo.progress = 60
+            await session.commit()
+
+            # Phase 3: Chunk + Embed
+            chunk_count = await _chunk_and_embed(
+                Path(repo_dir), repo.id, session
+            )
+
+            repo.progress = 90
             await session.commit()
 
             logger.info(
                 "job_complete",
                 repository_id=repository_id,
                 file_count=metadata["file_count"],
+                chunk_count=chunk_count,
             )
+
+            # Phase 4: Done
+            repo.status = "ready"
+            repo.progress = 100
+            repo.error_message = None
+            await session.commit()
+
         except Exception as exc:
             logger.error("job_failed", repository_id=repository_id, error=str(exc))
             repo.status = "failed"

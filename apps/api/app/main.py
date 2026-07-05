@@ -25,7 +25,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
 from app.middleware.rate_limit import limiter
-from app.routes import admin, github, projects, repositories, webhooks
+from app.routes import admin, github, projects, repositories, search, webhooks
 from app.settings import get_settings
 
 structlog.configure(
@@ -49,6 +49,7 @@ fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handle
 fastapi_app.include_router(projects.router, prefix="/api")
 fastapi_app.include_router(repositories.router, prefix="/api")
 fastapi_app.include_router(github.router, prefix="/api")
+fastapi_app.include_router(search.router, prefix="/api")
 fastapi_app.include_router(admin.router, prefix="/api")
 fastapi_app.include_router(webhooks.router, prefix="/api")
 

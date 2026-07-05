@@ -71,6 +71,17 @@ export type AdminProject = {
   repo_status: string | null;
 };
 
+export type SearchHit = {
+  id: string;
+  file_path: string;
+  language: string;
+  start_line: number;
+  end_line: number;
+  content: string;
+  chunk_index: number;
+  score: number;
+};
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type GetToken = () => Promise<string | null>;
@@ -121,6 +132,15 @@ export async function createProject(
   });
 }
 
+export async function deleteProject(
+  getToken: GetToken,
+  projectId: string,
+): Promise<void> {
+  await apiFetch<void>(`/api/projects/${projectId}`, getToken, {
+    method: "DELETE",
+  });
+}
+
 export async function fetchProject(
   getToken: GetToken,
   projectId: string,
@@ -168,4 +188,15 @@ export async function fetchAdminProjects(
   getToken: GetToken,
 ): Promise<AdminProject[]> {
   return apiFetch<AdminProject[]>("/api/admin/projects", getToken);
+}
+
+export async function searchProjectCode(
+  getToken: GetToken,
+  projectId: string,
+  input: { query: string; limit?: number },
+): Promise<SearchHit[]> {
+  return apiFetch<SearchHit[]>(`/api/projects/${projectId}/search`, getToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

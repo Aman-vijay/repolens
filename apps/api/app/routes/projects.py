@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,3 +31,15 @@ async def create_project(
     db: AsyncSession = Depends(get_db_session),
 ):
     return await project_service.create_project(db, current_user, body)
+
+
+@router.delete("/projects/{project_id}", status_code=204)
+@limiter.limit(RATE_LIMIT)
+async def delete_project(
+    request: Request,
+    project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    await project_service.delete_project(db, project_id, current_user)
+    return None

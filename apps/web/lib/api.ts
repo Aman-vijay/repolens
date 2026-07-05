@@ -103,7 +103,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type GetToken = () => Promise<string | null>;
 
-export async function apiFetch<T>(
+async function apiFetch<T>(
   path: string,
   getToken: GetToken,
   init?: RequestInit,

@@ -4,13 +4,8 @@ import { useState } from "react";
 import { ChevronRight, File, Folder } from "lucide-react";
 
 import type { TreeNode } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatBytes } from "@/lib/utils";
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function TreeLeaf({ node }: { node: TreeNode; depth: number }) {
   return (

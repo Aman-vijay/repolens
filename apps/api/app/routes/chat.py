@@ -7,7 +7,8 @@ from app.middleware.rate_limit import limiter
 from app.schemas.chat import ChatRequest
 from app.services import project_service
 from app.services.chat_service import stream_chat
-from repolens_db import User, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
+from repolens_db import User
 
 router = APIRouter(tags=["chat"])
 

@@ -15,6 +15,7 @@ import {
   fetchProjects,
   fetchRepository,
   searchProjectCode,
+  explainSearch,
   fetchAnalysis,
   regenerateAnalysis,
 } from "@/lib/api";
@@ -134,6 +135,22 @@ export function useSearchCode() {
       query: string;
       limit?: number;
     }) => searchProjectCode(getToken, projectId, { query, limit }),
+  });
+}
+
+export function useExplainSearch() {
+  const { getToken } = useAuth();
+
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      query,
+      limit,
+    }: {
+      projectId: string;
+      query: string;
+      limit?: number;
+    }) => explainSearch(getToken, projectId, { query, limit }),
   });
 }
 

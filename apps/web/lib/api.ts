@@ -82,6 +82,23 @@ export type SearchHit = {
   score: number;
 };
 
+export type ChunkExplanation = SearchHit & {
+  symbol_name: string | null;
+  highlight_start_line: number;
+  highlight_end_line: number;
+  role: "entry_point" | "main_implementation" | "supporting_utility" | "configuration" | "tests";
+  relevance_reason: string;
+  explanation: string;
+};
+
+export type SearchExplanation = {
+  architectural_context: string;
+  quick_understanding: string;
+  execution_flow: string | null;
+  explanations: ChunkExplanation[];
+  related_files: string[];
+};
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type GetToken = () => Promise<string | null>;
@@ -199,6 +216,17 @@ export async function searchProjectCode(
   input: { query: string; limit?: number },
 ): Promise<SearchHit[]> {
   return apiFetch<SearchHit[]>(`/api/projects/${projectId}/search`, getToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function explainSearch(
+  getToken: GetToken,
+  projectId: string,
+  input: { query: string; limit?: number },
+): Promise<SearchExplanation> {
+  return apiFetch<SearchExplanation>(`/api/projects/${projectId}/search/explain`, getToken, {
     method: "POST",
     body: JSON.stringify(input),
   });

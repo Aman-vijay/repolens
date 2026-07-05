@@ -72,25 +72,21 @@ export default function ProjectDetailPage({
   const router = useRouter();
   const [showPicker, setShowPicker] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleDelete = () => {
-    if (
-      confirm(
-        "Are you sure you want to delete this project? This will permanently delete all metadata and search embeddings."
-      )
-    ) {
-      deleteMutation.mutate(projectId, {
-        onSuccess: () => {
-          toast.success("Project deleted successfully.");
-          router.push("/dashboard");
-        },
-        onError: (err) => {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to delete project."
-          );
-        },
-      });
-    }
+    deleteMutation.mutate(projectId, {
+      onSuccess: () => {
+        toast.success("Project deleted successfully.");
+        router.push("/dashboard");
+      },
+      onError: (err) => {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to delete project."
+        );
+        setIsDeleteDialogOpen(false);
+      },
+    });
   };
 
   if (projectLoading) {
@@ -142,21 +138,11 @@ export default function ProjectDetailPage({
           <Button
             variant="destructive"
             size="sm"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
+            onClick={() => setIsDeleteDialogOpen(true)}
             className="shrink-0"
           >
-            {deleteMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting…
-              </>
-            ) : (
-              <>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Project
-              </>
-            )}
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Project
           </Button>
         </div>
 
@@ -273,6 +259,42 @@ export default function ProjectDetailPage({
           )}
         </div>
       </main>
+
+      {isDeleteDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4">
+          <Card className="w-full max-w-md shadow-lg border-destructive/20">
+            <CardContent className="space-y-4 p-6">
+              <h2 className="text-lg font-semibold text-foreground">Are you absolutely sure?</h2>
+              <p className="text-sm text-muted-foreground">
+                This action cannot be undone. This will permanently delete your project, including the repository metadata and all code search embeddings.
+              </p>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                  disabled={deleteMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Project"
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </>
   );
 }

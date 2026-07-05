@@ -63,11 +63,23 @@ async def get_project_detail(
     )
 
 
+from sqlalchemy import delete
+from repolens_db import CodeChunk
+
 async def delete_project(
     db: AsyncSession,
     project_id: uuid.UUID,
     user: User,
 ) -> None:
     project = await get_owned_project_or_404(db, project_id, user, with_repository=True)
+    
+    if project.repository:
+        # Manually delete code chunks to avoid foreign key violation
+        # since ON DELETE CASCADE is missing on the DB schema
+        await db.execute(
+            delete(CodeChunk).where(CodeChunk.repository_id == project.repository.id)
+        )
+        await db.delete(project.repository)
+        
     await db.delete(project)
     await db.commit()

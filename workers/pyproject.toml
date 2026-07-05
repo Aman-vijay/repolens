@@ -12,10 +12,12 @@ dependencies = [
     "openai>=2.0",
     "tree-sitter>=0.26.0",
     "tree-sitter-languages>=1.10.2",
+    "repolens-prompts",
 ]
 
 [tool.uv.sources]
 repolens-db = { workspace = true }
+repolens-prompts = { workspace = true }
 
 [build-system]
 requires = ["setuptools>=68"]

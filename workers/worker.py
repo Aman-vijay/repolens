@@ -19,9 +19,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from repolens_db import CodeChunk, Repository, get_async_session_factory
-
 from workers.chunk_service import chunk_repository
 from workers.embed_service import embed_texts
+from workers.key_file_service import save_key_files
+from workers.analysis_service import run_repository_analysis
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -59,7 +60,7 @@ async def _run_git_clone(url: str, dest: str) -> str:
     )
     await asyncio.wait_for(proc.wait(), timeout=CLONE_TIMEOUT_SECONDS)
     if proc.returncode != 0:
-        stderr = (await proc.stderr.read()).decode(errors="replace").strip()
+        stderr = (await proc.stderr.read()).decode(errors="replace").strip() if proc.stderr else "Unknown error"
         raise RuntimeError(f"git clone failed: {stderr}")
 
     branch_proc = await asyncio.create_subprocess_exec(
@@ -69,7 +70,7 @@ async def _run_git_clone(url: str, dest: str) -> str:
     )
     await branch_proc.wait()
     branch = "main"
-    if branch_proc.returncode == 0:
+    if branch_proc.returncode == 0 and branch_proc.stdout:
         branch = (await branch_proc.stdout.read()).decode().strip()
     return branch
 
@@ -210,6 +211,10 @@ async def clone_repository(
             repo.total_size_bytes = metadata["total_size_bytes"]
             repo.languages = metadata["languages"]
             repo.file_tree = metadata["file_tree"]
+            
+            # Save key files (README, package.json, etc.) verbatim before deleting clone directory
+            await save_key_files(Path(repo_dir), repository_id, session)
+
             repo.progress = 60
             await session.commit()
 
@@ -234,6 +239,11 @@ async def clone_repository(
             repo.error_message = None
             await session.commit()
 
+            # Run Repository Analysis
+            logger.info("analysis_start", repository_id=repository_id)
+            await run_repository_analysis(session, repository_id)
+            logger.info("analysis_done", repository_id=repository_id)
+
         except Exception as exc:
             logger.error("job_failed", repository_id=repository_id, error=str(exc))
             repo.status = "failed"
@@ -242,6 +252,14 @@ async def clone_repository(
         finally:
             if repo_dir:
                 shutil.rmtree(repo_dir, ignore_errors=True)
+
+
+async def analyze_repository(ctx: dict, repository_id: str, force: bool = False) -> None:
+    """Standalone background task to analyze a repository (for manual regenerations)."""
+    logger.info("job_started", job="analyze_repository", repository_id=repository_id)
+    session_factory = get_async_session_factory()
+    async with session_factory() as session:
+        await run_repository_analysis(session, repository_id, force=force)
 
 
 def get_redis_settings() -> RedisSettings:
@@ -254,7 +272,6 @@ def get_redis_settings() -> RedisSettings:
         port=parsed.port or 6379,
         password=parsed.password or None,
         ssl=parsed.scheme == "rediss",
-        ssl_cert_reqs=None,
     )
 
 
@@ -267,7 +284,7 @@ async def on_shutdown(ctx: dict) -> None:
 
 
 class WorkerSettings:
-    functions = [clone_repository]
+    functions = [clone_repository, analyze_repository]
     on_startup = on_startup
     on_shutdown = on_shutdown
     redis_settings = get_redis_settings()

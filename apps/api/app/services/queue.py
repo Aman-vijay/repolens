@@ -17,7 +17,6 @@ def _parse_redis_settings(redis_url: str) -> RedisSettings:
         port=parsed.port or 6379,
         password=parsed.password or None,
         ssl=parsed.scheme == "rediss",
-        ssl_cert_reqs=None,
     )
 
 
@@ -32,3 +31,8 @@ async def get_arq_pool():
 async def enqueue_clone(repository_id: str) -> None:
     pool = await get_arq_pool()
     await pool.enqueue_job("clone_repository", repository_id=repository_id)
+
+
+async def enqueue_analysis(repository_id: str, force: bool = False) -> None:
+    pool = await get_arq_pool()
+    await pool.enqueue_job("analyze_repository", repository_id=repository_id, force=force)

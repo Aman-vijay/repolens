@@ -5,4 +5,4 @@ description = "RepoLens — understand and plan changes in unfamiliar codebases"
 requires-python = ">=3.11"
 
 [tool.uv.workspace]
-members = ["apps/api", "workers", "packages/db"]
+members = ["apps/api", "workers", "packages/db", "packages/prompts"]

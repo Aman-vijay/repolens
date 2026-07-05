@@ -1,22 +1,26 @@
 import { create, StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Project, Repository } from "@/lib/api";
+import type { Project, Repository, RepositoryAnalysis } from "@/lib/api";
 
 // --- Project Slice ---
 export interface ProjectSlice {
   activeProject: Project | null;
   activeRepository: Repository | null;
+  activeAnalysis: RepositoryAnalysis | null;
   setActiveProject: (project: Project | null) => void;
   setActiveRepository: (repo: Repository | null) => void;
+  setActiveAnalysis: (analysis: RepositoryAnalysis | null) => void;
   clearActiveState: () => void;
 }
 
 const createProjectSlice: StateCreator<ProjectSlice & UISlice, [], [], ProjectSlice> = (set) => ({
   activeProject: null,
   activeRepository: null,
+  activeAnalysis: null,
   setActiveProject: (project) => set({ activeProject: project }),
   setActiveRepository: (repo) => set({ activeRepository: repo }),
-  clearActiveState: () => set({ activeProject: null, activeRepository: null }),
+  setActiveAnalysis: (analysis) => set({ activeAnalysis: analysis }),
+  clearActiveState: () => set({ activeProject: null, activeRepository: null, activeAnalysis: null }),
 });
 
 // --- UI Slice ---
@@ -48,6 +52,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({ 
         activeProject: state.activeProject,
         activeRepository: state.activeRepository,
+        activeAnalysis: state.activeAnalysis,
       }),
     }
   )

@@ -203,3 +203,79 @@ export async function searchProjectCode(
     body: JSON.stringify(input),
   });
 }
+
+export type RepositoryAnalysis = {
+  id: string;
+  repository_id: string;
+  analysis_version: number;
+  analysis_status: "pending" | "running" | "success" | "failed";
+  snapshot_hash: string;
+  model: string;
+  prompt_version: string;
+  executive_summary: string | null;
+  architecture_summary: string | null;
+  architecture_style: string | null;
+  architecture_layers: string[] | null;
+  tech_stack: {
+    languages: string[];
+    frameworks: string[];
+    tools: string[];
+  } | null;
+  repo_facts: {
+    primary_language: string | null;
+    repository_type: string;
+    primary_framework: string;
+    package_manager: string;
+    containerized: boolean;
+    ci_detected: boolean;
+    license: string;
+    documentation_quality: string;
+    has_tests: boolean;
+    has_readme: boolean;
+    fact_sources?: Record<string, string>;
+  } | null;
+  repo_insights: {
+    strengths: string[];
+    risks: string[];
+    notable_decisions: string[];
+    patterns_detected: string[];
+  } | null;
+  source_context: {
+    readme_present: boolean;
+    readme_truncated: boolean;
+    readme_chars: number;
+    manifest_files_found: string[];
+    top_chunks_used: number;
+    total_context_chars: number;
+  } | null;
+  token_usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  } | null;
+  generation_latency_ms: number | null;
+  error_message: string | null;
+  generated_at: string | null;
+  created_at: string;
+};
+
+export type RegenerateResponse = {
+  status: "queued" | "unchanged" | "running";
+  skipped: boolean;
+};
+
+export async function fetchAnalysis(
+  getToken: GetToken,
+  projectId: string,
+): Promise<RepositoryAnalysis> {
+  return apiFetch<RepositoryAnalysis>(`/api/projects/${projectId}/analysis`, getToken);
+}
+
+export async function regenerateAnalysis(
+  getToken: GetToken,
+  projectId: string,
+): Promise<RegenerateResponse> {
+  return apiFetch<RegenerateResponse>(`/api/projects/${projectId}/analysis/regenerate`, getToken, {
+    method: "POST",
+  });
+}

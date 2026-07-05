@@ -18,6 +18,7 @@ import { GitHubRepoPicker } from "@/components/github-repo-picker";
 import { LanguageBreakdown } from "@/components/language-breakdown";
 import { Navbar } from "@/components/navbar";
 import { ProjectCodeSearch } from "@/components/project-code-search";
+import { RepositoryIntelligence } from "@/components/repository-intelligence";
 import {
   useAttachRepository,
   useProject,
@@ -263,6 +264,8 @@ export default function ProjectDetailPage({
                         <LanguageBreakdown languages={repo.languages} />
                       </div>
                     )}
+
+                    <RepositoryIntelligence projectId={projectId} />
 
                     {repo.file_tree && (
                       <div>

@@ -1,6 +1,6 @@
 from repolens_db.base import Base
 from repolens_db.engine import get_async_session_factory, get_engine
-from repolens_db.models import CodeChunk, Project, Repository, User
+from repolens_db.models import CodeChunk, Project, Repository, User, RepositoryFile, RepositoryAnalysis
 
 __all__ = [
     "Base",
@@ -8,6 +8,8 @@ __all__ = [
     "Project",
     "Repository",
     "User",
+    "RepositoryFile",
+    "RepositoryAnalysis",
     "engine",
     "async_session_factory",
     "get_engine",

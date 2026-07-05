@@ -104,6 +104,12 @@ class Repository(Base):
     code_chunks: Mapped[list["CodeChunk"]] = relationship(
         cascade="all, delete-orphan"
     )
+    key_files: Mapped[list["RepositoryFile"]] = relationship(
+        back_populates="repository", cascade="all, delete-orphan"
+    )
+    analyses: Mapped[list["RepositoryAnalysis"]] = relationship(
+        back_populates="repository", cascade="all, delete-orphan"
+    )
 
 
 class CodeChunk(Base):
@@ -128,3 +134,61 @@ class CodeChunk(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class RepositoryFile(Base):
+    __tablename__ = "repository_files"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, server_default=func.gen_random_uuid()
+    )
+    repository_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    file_path: Mapped[str] = mapped_column(String(2048), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    repository: Mapped["Repository"] = relationship(back_populates="key_files")
+
+
+class RepositoryAnalysis(Base):
+    __tablename__ = "repository_analyses"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, server_default=func.gen_random_uuid()
+    )
+    repository_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    analysis_version: Mapped[int] = mapped_column(nullable=False, default=1)
+    analysis_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    snapshot_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(64), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(32), nullable=False)
+
+    executive_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    architecture_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    architecture_style: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    architecture_layers: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    tech_stack: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    repo_facts: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    repo_insights: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    source_context: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    analysis_metrics: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    token_usage: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    generation_latency_ms: Mapped[int | None] = mapped_column(nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    generated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    repository: Mapped["Repository"] = relationship(back_populates="analyses")

@@ -15,6 +15,8 @@ import {
   fetchProjects,
   fetchRepository,
   searchProjectCode,
+  fetchAnalysis,
+  regenerateAnalysis,
 } from "@/lib/api";
 
 export function useProjects() {
@@ -132,5 +134,31 @@ export function useSearchCode() {
       query: string;
       limit?: number;
     }) => searchProjectCode(getToken, projectId, { query, limit }),
+  });
+}
+
+export function useAnalysis(projectId: string | undefined) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["analysis", projectId],
+    queryFn: () => fetchAnalysis(getToken, projectId!),
+    enabled: !!projectId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.analysis_status;
+      if (status === "pending" || status === "running") return 3000;
+      return false;
+    },
+  });
+}
+
+export function useRegenerateAnalysis() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId: string) => regenerateAnalysis(getToken, projectId),
+    onSuccess: (_data, projectId) => {
+      queryClient.invalidateQueries({ queryKey: ["analysis", projectId] });
+    },
   });
 }

@@ -1,6 +1,10 @@
 import time
 import json
 import os
+import asyncio
+import structlog
+import openai
+import random
 from datetime import datetime
 from pydantic import BaseModel, Field
 from openai import OpenAI
@@ -11,6 +15,37 @@ from repolens_db import Repository, RepositoryFile, RepositoryAnalysis
 from workers.snapshot_service import build_snapshot, compute_snapshot_hash
 from workers.deterministic_extractor import extract_facts
 from prompts import build_intelligence_prompt
+
+logger = structlog.get_logger()
+
+# Pricing constants for gpt-4o-mini (USD per 1M tokens)
+PRICING_INPUT_1M = 0.150
+PRICING_OUTPUT_1M = 0.600
+
+def classify_error(exc: Exception) -> tuple[str, bool]:
+    """Classifies an exception into a structured error code and retry eligibility.
+    
+    Returns (error_code, is_retryable)
+    """
+    if isinstance(exc, openai.RateLimitError):
+        return "rate_limit", True
+    elif isinstance(exc, openai.APITimeoutError):
+        return "timeout", True
+    elif isinstance(exc, openai.APIConnectionError):
+        return "network_error", True
+    elif isinstance(exc, openai.InternalServerError):
+        return "provider_error", True
+    elif isinstance(exc, openai.BadRequestError):
+        return "validation_error", False
+    elif isinstance(exc, openai.AuthenticationError):
+        return "provider_error", False
+    elif isinstance(exc, openai.APIError):
+        status_code = getattr(exc, "status_code", None)
+        if status_code in {408, 429, 500, 502, 503, 504}:
+            return "provider_error", True
+        return "provider_error", False
+    else:
+        return "unexpected_error", False
 
 # Pydantic schemas for OpenAI Structured Outputs
 class TechStack(BaseModel):
@@ -47,7 +82,8 @@ class LLMAnalysisOutput(BaseModel):
 async def run_repository_analysis(
     session: AsyncSession,
     repository_id: str,
-    force: bool = False
+    force: bool = False,
+    worker_job_id: str | None = None
 ) -> None:
     """Orchestrates the repository intelligence generation pipeline.
     
@@ -141,16 +177,54 @@ async def run_repository_analysis(
         client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
         llm_t0 = time.perf_counter()
         
-        completion = client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            response_format=LLMAnalysisOutput,
-            temperature=0.1,
-            timeout=45.0
-        )
+        max_retries = 3
+        base_delay = 2.0
+        retries = 0
+        completion = None
+
+        while True:
+            try:
+                completion = client.beta.chat.completions.parse(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    response_format=LLMAnalysisOutput,
+                    temperature=0.1,
+                    timeout=45.0
+                )
+                break
+            except Exception as exc:
+                error_code, is_retryable = classify_error(exc)
+                if is_retryable and retries < max_retries:
+                    retries += 1
+                    max_delay = base_delay * (2 ** (retries - 1))
+                    delay = random.uniform(0, max_delay)
+                    logger.warning(
+                        "llm_call_failed_retrying",
+                        repository_id=repository_id,
+                        worker_job_id=worker_job_id,
+                        analysis_id=str(analysis.id) if 'analysis' in locals() and analysis else None,
+                        error_code=error_code,
+                        retry=retries,
+                        delay=delay,
+                        error=str(exc)
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                else:
+                    logger.error(
+                        "llm_call_failed_final",
+                        repository_id=repository_id,
+                        worker_job_id=worker_job_id,
+                        analysis_id=str(analysis.id) if 'analysis' in locals() and analysis else None,
+                        error_code=error_code,
+                        retries_attempted=retries,
+                        error=str(exc)
+                    )
+                    raise exc
+
         llm_latency = int((time.perf_counter() - llm_t0) * 1000)
 
         # Get structured output
@@ -193,6 +267,12 @@ async def run_repository_analysis(
             "prompt_assembly_ms": t_prompt
         }
 
+        # Calculate cost
+        prompt_tokens = completion.usage.prompt_tokens if (completion and completion.usage) else 0
+        completion_tokens = completion.usage.completion_tokens if (completion and completion.usage) else 0
+        total_tokens = completion.usage.total_tokens if (completion and completion.usage) else 0
+        cost = (prompt_tokens * PRICING_INPUT_1M / 1_000_000) + (completion_tokens * PRICING_OUTPUT_1M / 1_000_000)
+
         # Populate the analysis record
         analysis.executive_summary = result.executive_summary
         analysis.architecture_summary = result.architecture_summary
@@ -204,19 +284,46 @@ async def run_repository_analysis(
         analysis.source_context = source_context
         analysis.analysis_metrics = analysis_metrics
         analysis.token_usage = {
-            "prompt_tokens": completion.usage.prompt_tokens if completion.usage else 0,
-            "completion_tokens": completion.usage.completion_tokens if completion.usage else 0,
-            "total_tokens": completion.usage.total_tokens if completion.usage else 0
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens
         }
         analysis.generation_latency_ms = llm_latency
         analysis.generated_at = datetime.utcnow()
         analysis.analysis_status = "success"
+        analysis.error_code = None
         analysis.error_message = None
 
         await session.commit()
+        
+        logger.info(
+            "repository_analysis_success",
+            repository_id=repository_id,
+            worker_job_id=worker_job_id,
+            analysis_id=str(analysis.id),
+            model="gpt-4o-mini",
+            prompt_version="v1.0.0",
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            cost_usd=cost,
+            latency_ms=llm_latency,
+            retries_attempted=retries
+        )
 
     except Exception as exc:
+        error_code, _ = classify_error(exc)
         analysis.analysis_status = "failed"
+        analysis.error_code = error_code
         analysis.error_message = str(exc)
         await session.commit()
+        
+        logger.error(
+            "repository_analysis_failed",
+            repository_id=repository_id,
+            worker_job_id=worker_job_id,
+            analysis_id=str(analysis.id) if 'analysis' in locals() and analysis else None,
+            error_code=error_code,
+            error=str(exc)
+        )
         raise exc

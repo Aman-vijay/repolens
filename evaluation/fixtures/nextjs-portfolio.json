@@ -1,0 +1,22 @@
+{
+  "snapshot": {
+    "repo_url": "https://github.com/example/nextjs-portfolio",
+    "readme_content": "# My NextJS Portfolio\nBuilt with Next.js App Router and TailwindCSS.",
+    "manifest_snippets": {
+      "package.json": "{\n  \"name\": \"nextjs-portfolio\",\n  \"dependencies\": {\n    \"next\": \"15.0.0\",\n    \"react\": \"19.0.0\"\n  }\n}"
+    },
+    "file_tree_outline": "- root/\n  - app/\n    - page.tsx\n    - layout.tsx\n  - package.json\n  - pnpm-lock.yaml",
+    "language_stats": {
+      "TypeScript": {
+        "files": 8,
+        "bytes": 20480
+      }
+    }
+  },
+  "assertions": {
+    "primary_language": "TypeScript",
+    "primary_framework": "Next.js",
+    "containerized": false,
+    "package_manager": "pnpm"
+  }
+}

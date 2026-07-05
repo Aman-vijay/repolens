@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-07-05 08:48:00 UTC",
+  "mode": "smoke",
+  "passed": true,
+  "results": [
+    {
+      "fixture": "fastapi-boilerplate.json",
+      "passed": true,
+      "prompt_rendered": true,
+      "failures": []
+    },
+    {
+      "fixture": "nextjs-portfolio.json",
+      "passed": true,
+      "prompt_rendered": true,
+      "failures": []
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "snapshot": {
+    "repo_url": "https://github.com/example/fastapi-boilerplate",
+    "readme_content": "# FastAPI Boilerplate\nThis is a production-grade FastAPI application template.\nIt uses SQLAlchemy for DB management and Docker for containerization.",
+    "manifest_snippets": {
+      "pyproject.toml": "[project]\nname = \"fastapi-boilerplate\"\ndependencies = [\n    \"fastapi>=0.110\",\n    \"sqlalchemy>=2.0\"\n]",
+      "Dockerfile": "FROM python:3.11-slim\nWORKDIR /app\nCOPY . ."
+    },
+    "file_tree_outline": "- root/\n  - app/\n    - __init__.py\n    - main.py\n    - routes/\n  - Dockerfile\n  - pyproject.toml",
+    "language_stats": {
+      "Python": {
+        "files": 5,
+        "bytes": 10240
+      }
+    }
+  },
+  "assertions": {
+    "primary_language": "Python",
+    "primary_framework": "FastAPI",
+    "containerized": true,
+    "architecture_style": "layered"
+  }
+}

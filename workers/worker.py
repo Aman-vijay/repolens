@@ -240,9 +240,9 @@ async def clone_repository(
             await session.commit()
 
             # Run Repository Analysis
-            logger.info("analysis_start", repository_id=repository_id)
-            await run_repository_analysis(session, repository_id)
-            logger.info("analysis_done", repository_id=repository_id)
+            logger.info("analysis_start", repository_id=repository_id, worker_job_id=ctx.get("job_id"))
+            await run_repository_analysis(session, repository_id, worker_job_id=ctx.get("job_id"))
+            logger.info("analysis_done", repository_id=repository_id, worker_job_id=ctx.get("job_id"))
 
         except Exception as exc:
             logger.error("job_failed", repository_id=repository_id, error=str(exc))
@@ -256,10 +256,10 @@ async def clone_repository(
 
 async def analyze_repository(ctx: dict, repository_id: str, force: bool = False) -> None:
     """Standalone background task to analyze a repository (for manual regenerations)."""
-    logger.info("job_started", job="analyze_repository", repository_id=repository_id)
+    logger.info("job_started", job="analyze_repository", repository_id=repository_id, worker_job_id=ctx.get("job_id"))
     session_factory = get_async_session_factory()
     async with session_factory() as session:
-        await run_repository_analysis(session, repository_id, force=force)
+        await run_repository_analysis(session, repository_id, force=force, worker_job_id=ctx.get("job_id"))
 
 
 def get_redis_settings() -> RedisSettings:

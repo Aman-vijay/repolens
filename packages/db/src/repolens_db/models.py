@@ -183,6 +183,7 @@ class RepositoryAnalysis(Base):
     token_usage: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     generation_latency_ms: Mapped[int | None] = mapped_column(nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     generated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

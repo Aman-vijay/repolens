@@ -2,6 +2,12 @@ import { create, StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Project, Repository, RepositoryAnalysis } from "@/lib/api";
 
+export interface ChatMessage {
+  id: string;
+  role: "system" | "user" | "assistant" | "data" | "tool";
+  content: string;
+}
+
 // --- Project Slice ---
 export interface ProjectSlice {
   activeProject: Project | null;
@@ -13,7 +19,7 @@ export interface ProjectSlice {
   clearActiveState: () => void;
 }
 
-const createProjectSlice: StateCreator<ProjectSlice & UISlice, [], [], ProjectSlice> = (set) => ({
+const createProjectSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], ProjectSlice> = (set) => ({
   activeProject: null,
   activeRepository: null,
   activeAnalysis: null,
@@ -31,21 +37,43 @@ export interface UISlice {
   setGlobalSearchQuery: (query: string) => void;
 }
 
-const createUISlice: StateCreator<ProjectSlice & UISlice, [], [], UISlice> = (set) => ({
+const createUISlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], UISlice> = (set) => ({
   isRepoPickerOpen: false,
   globalSearchQuery: "",
   setRepoPickerOpen: (isOpen) => set({ isRepoPickerOpen: isOpen }),
   setGlobalSearchQuery: (query) => set({ globalSearchQuery: query }),
 });
 
+// --- Chat Slice ---
+export interface ChatSlice {
+  chatThreads: Record<string, ChatMessage[]>;
+  setChatMessages: (projectId: string, messages: ChatMessage[]) => void;
+  clearChatThread: (projectId: string) => void;
+}
+
+const createChatSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], ChatSlice> = (set) => ({
+  chatThreads: {},
+  setChatMessages: (projectId, messages) => 
+    set((state) => ({
+      chatThreads: { ...state.chatThreads, [projectId]: messages }
+    })),
+  clearChatThread: (projectId) => 
+    set((state) => {
+      const copy = { ...state.chatThreads };
+      delete copy[projectId];
+      return { chatThreads: copy };
+    })
+});
+
 // --- Root Store ---
-export type AppState = ProjectSlice & UISlice;
+export type AppState = ProjectSlice & UISlice & ChatSlice;
 
 export const useAppStore = create<AppState>()(
   persist(
     (...a) => ({
       ...createProjectSlice(...a),
       ...createUISlice(...a),
+      ...createChatSlice(...a),
     }),
     {
       name: "repolens-storage",
@@ -53,6 +81,7 @@ export const useAppStore = create<AppState>()(
         activeProject: state.activeProject,
         activeRepository: state.activeRepository,
         activeAnalysis: state.activeAnalysis,
+        chatThreads: state.chatThreads,
       }),
     }
   )

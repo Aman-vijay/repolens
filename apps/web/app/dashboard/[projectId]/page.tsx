@@ -133,6 +133,12 @@ export default function ProjectDetailPage({
     deleteMutation.mutate(projectId, {
       onSuccess: () => {
         toast.success("Project deleted successfully.");
+        
+        // Filter out the deleted project from local Zustand cache
+        const currentProjects = useAppStore.getState().projectsList || [];
+        const updatedProjects = currentProjects.filter((p) => p.id !== projectId);
+        useAppStore.getState().setProjectsList(updatedProjects);
+
         useAppStore.getState().clearActiveState(); // clear cache
         router.push("/dashboard");
       },

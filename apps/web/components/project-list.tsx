@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { ChevronRight, Folder } from "lucide-react";
 
@@ -10,13 +11,24 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ProjectList() {
-  const { data: projects, isPending, isError } = useProjects();
+  const projectsList = useAppStore((state) => state.projectsList);
+  const setProjectsList = useAppStore((state) => state.setProjectsList);
+  const { data: queryProjects, isPending: queryPending, isError } = useProjects();
+
+  useEffect(() => {
+    if (queryProjects) {
+      setProjectsList(queryProjects);
+    }
+  }, [queryProjects, setProjectsList]);
+
+  const projects = queryProjects || projectsList || [];
+  const isPending = queryPending && (!projectsList || projectsList.length === 0);
 
   if (isPending) {
     return (
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-16 w-full" />
+          <Skeleton key={i} className="h-16 w-full animate-pulse" />
         ))}
       </div>
     );

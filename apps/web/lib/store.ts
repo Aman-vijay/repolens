@@ -13,9 +13,11 @@ export interface ProjectSlice {
   activeProject: Project | null;
   activeRepository: Repository | null;
   activeAnalysis: RepositoryAnalysis | null;
+  projectsList: Project[];
   setActiveProject: (project: Project | null) => void;
   setActiveRepository: (repo: Repository | null) => void;
   setActiveAnalysis: (analysis: RepositoryAnalysis | null) => void;
+  setProjectsList: (projects: Project[]) => void;
   clearActiveState: () => void;
 }
 
@@ -23,9 +25,11 @@ const createProjectSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [
   activeProject: null,
   activeRepository: null,
   activeAnalysis: null,
+  projectsList: [],
   setActiveProject: (project) => set({ activeProject: project }),
   setActiveRepository: (repo) => set({ activeRepository: repo }),
   setActiveAnalysis: (analysis) => set({ activeAnalysis: analysis }),
+  setProjectsList: (projects) => set({ projectsList: projects }),
   clearActiveState: () => set({ activeProject: null, activeRepository: null, activeAnalysis: null }),
 });
 
@@ -98,6 +102,7 @@ export const useAppStore = create<AppState>()(
         activeAnalysis: state.activeAnalysis,
         isChatSidebarOpen: state.isChatSidebarOpen,
         cachedSessions: state.cachedSessions,
+        projectsList: state.projectsList,
       }),
     }
   )

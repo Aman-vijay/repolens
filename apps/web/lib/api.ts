@@ -363,3 +363,132 @@ export async function deleteChatSession(
     method: "DELETE",
   });
 }
+
+// --- Plan Types ---
+export type PlanFile = {
+  path: string;
+  action: "modify" | "new" | "delete";
+  reason: string;
+  confidence: "high" | "medium" | "low";
+};
+
+export type PlanReference = {
+  path: string;
+  reason: string;
+};
+
+export type PlanStep = {
+  order: number;
+  title: string;
+  description: string;
+  why_this_order: string;
+  migration_impact: string;
+  rollback_concern: string;
+  files: PlanFile[];
+  references: PlanReference[];
+  depends_on: number[];
+  risks: string[];
+};
+
+export type ExistingPattern = {
+  description: string;
+  files: string[];
+};
+
+export type ArchitectureImpact = {
+  layers: string[];
+  breaking_change: boolean;
+};
+
+export type PlanContent = {
+  summary: string;
+  estimated_complexity: "low" | "medium" | "high";
+  confidence: "high" | "medium" | "low";
+  confidence_reason: string;
+  affected_areas: string[];
+  architecture_impact: ArchitectureImpact;
+  existing_patterns: ExistingPattern[];
+  planning_checklist: string[];
+  prerequisites: string[];
+  steps: PlanStep[];
+  why_this_order: string[];
+  risks_and_considerations: string[];
+  unknowns: string[];
+  testing_suggestions: string[];
+};
+
+export type PlanVersion = {
+  id: string;
+  session_id: string;
+  version: number;
+  refinement_prompt: string | null;
+  status: "pending" | "generating" | "completed" | "failed";
+  plan_content: PlanContent | null;
+  model: string;
+  token_usage: Record<string, any> | null;
+  generation_latency_ms: number | null;
+  error_message: string | null;
+  created_at: string;
+};
+
+export type PlanSession = {
+  id: string;
+  project_id: string;
+  title: string;
+  feature_request: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PlanSessionDetail = PlanSession & {
+  versions: PlanVersion[];
+};
+
+// --- Plan API Endpoints ---
+export async function createPlanSession(
+  getToken: GetToken,
+  projectId: string,
+  featureRequest: string,
+): Promise<PlanSession> {
+  return apiFetch<PlanSession>(`/api/projects/${projectId}/plans`, getToken, {
+    method: "POST",
+    body: JSON.stringify({ feature_request: featureRequest }),
+  });
+}
+
+export async function fetchPlanSessions(
+  getToken: GetToken,
+  projectId: string,
+): Promise<PlanSession[]> {
+  return apiFetch<PlanSession[]>(`/api/projects/${projectId}/plans`, getToken);
+}
+
+export async function fetchPlanSession(
+  getToken: GetToken,
+  projectId: string,
+  sessionId: string,
+): Promise<PlanSessionDetail> {
+  return apiFetch<PlanSessionDetail>(`/api/projects/${projectId}/plans/${sessionId}`, getToken);
+}
+
+export async function refinePlan(
+  getToken: GetToken,
+  projectId: string,
+  sessionId: string,
+  refinementPrompt: string,
+): Promise<PlanVersion> {
+  return apiFetch<PlanVersion>(`/api/projects/${projectId}/plans/${sessionId}/refine`, getToken, {
+    method: "POST",
+    body: JSON.stringify({ refinement_prompt: refinementPrompt }),
+  });
+}
+
+export async function deletePlanSession(
+  getToken: GetToken,
+  projectId: string,
+  sessionId: string,
+): Promise<void> {
+  await apiFetch<void>(`/api/projects/${projectId}/plans/${sessionId}`, getToken, {
+    method: "DELETE",
+  });
+}

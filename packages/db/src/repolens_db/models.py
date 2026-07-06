@@ -244,3 +244,60 @@ class ChatMessage(Base):
     )
 
     session: Mapped["ChatSession"] = relationship(back_populates="messages")
+
+
+class PlanSession(Base):
+    __tablename__ = "plan_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, server_default=func.gen_random_uuid()
+    )
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False, default="New Plan")
+    feature_request: Mapped[str] = mapped_column(Text, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    versions: Mapped[list["PlanVersion"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan",
+        order_by="PlanVersion.version"
+    )
+
+
+class PlanVersion(Base):
+    __tablename__ = "plan_versions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, server_default=func.gen_random_uuid()
+    )
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("plan_sessions.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(nullable=False, default=1)
+    refinement_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    plan_content: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    model: Mapped[str] = mapped_column(String(64), nullable=False)
+    token_usage: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    generation_latency_ms: Mapped[int | None] = mapped_column(nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    session: Mapped["PlanSession"] = relationship(back_populates="versions")

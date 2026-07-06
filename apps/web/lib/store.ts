@@ -84,8 +84,19 @@ const createChatSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], 
     })),
 });
 
+// --- Plan Slice ---
+export interface PlanSlice {
+  activePlanSessionId: string | null;
+  setActivePlanSessionId: (sessionId: string | null) => void;
+}
+
+const createPlanSlice: StateCreator<ProjectSlice & UISlice & ChatSlice & PlanSlice, [], [], PlanSlice> = (set) => ({
+  activePlanSessionId: null,
+  setActivePlanSessionId: (sessionId) => set({ activePlanSessionId: sessionId }),
+});
+
 // --- Root Store ---
-export type AppState = ProjectSlice & UISlice & ChatSlice;
+export type AppState = ProjectSlice & UISlice & ChatSlice & PlanSlice;
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -93,6 +104,7 @@ export const useAppStore = create<AppState>()(
       ...createProjectSlice(...a),
       ...createUISlice(...a),
       ...createChatSlice(...a),
+      ...createPlanSlice(...a),
     }),
     {
       name: "repolens-storage",
@@ -103,6 +115,7 @@ export const useAppStore = create<AppState>()(
         isChatSidebarOpen: state.isChatSidebarOpen,
         cachedSessions: state.cachedSessions,
         projectsList: state.projectsList,
+        activePlanSessionId: state.activePlanSessionId,
       }),
     }
   )

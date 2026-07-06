@@ -22,6 +22,11 @@ import {
   regenerateAnalysis,
   searchProjectCode,
   explainSearch,
+  createPlanSession,
+  fetchPlanSessions,
+  fetchPlanSession,
+  refinePlan,
+  deletePlanSession,
 } from "@/lib/api";
 
 export function useProjects() {
@@ -232,6 +237,76 @@ export function useDeleteChatSession() {
       deleteChatSession(getToken, projectId, sessionId),
     onSuccess: (_data, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: ["chat-sessions", projectId] });
+    },
+  });
+}
+
+export function usePlanSessions(projectId: string | undefined) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["plan-sessions", projectId],
+    queryFn: () => fetchPlanSessions(getToken, projectId!),
+    enabled: !!projectId,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function usePlanSession(projectId: string | undefined, sessionId: string | null) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["plan-session", projectId, sessionId],
+    queryFn: () => fetchPlanSession(getToken, projectId!, sessionId!),
+    enabled: !!projectId && !!sessionId,
+    refetchInterval: (query) => {
+      const versions = query.state.data?.versions || [];
+      const hasGenerating = versions.some((v) => v.status === "pending" || v.status === "generating");
+      return hasGenerating ? 3000 : false;
+    },
+  });
+}
+
+export function useCreatePlan() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, featureRequest }: { projectId: string; featureRequest: string }) =>
+      createPlanSession(getToken, projectId, featureRequest),
+    onSuccess: (newSession, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ["plan-sessions", projectId] });
+    },
+  });
+}
+
+export function useRefinePlan() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      sessionId,
+      refinementPrompt,
+    }: {
+      projectId: string;
+      sessionId: string;
+      refinementPrompt: string;
+    }) => refinePlan(getToken, projectId, sessionId, refinementPrompt),
+    onSuccess: (newVersion, { projectId, sessionId }) => {
+      queryClient.invalidateQueries({ queryKey: ["plan-session", projectId, sessionId] });
+    },
+  });
+}
+
+export function useDeletePlanSession() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, sessionId }: { projectId: string; sessionId: string }) =>
+      deletePlanSession(getToken, projectId, sessionId),
+    onSuccess: (_data, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ["plan-sessions", projectId] });
     },
   });
 }

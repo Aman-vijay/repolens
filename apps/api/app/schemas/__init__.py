@@ -35,6 +35,13 @@ from app.schemas.search import (
     SearchHitOut,
     SearchQuery,
 )
+from app.schemas.plan import (
+    PlanRequest,
+    PlanRefineRequest,
+    PlanVersionOut,
+    PlanSessionOut,
+    PlanSessionDetailOut,
+)
 
 __all__ = [
     "ProjectCreate",
@@ -52,4 +59,9 @@ __all__ = [
     "SearchQuery",
     "SearchHitOut",
     "SEARCH_RATE_LIMIT",
+    "PlanRequest",
+    "PlanRefineRequest",
+    "PlanVersionOut",
+    "PlanSessionOut",
+    "PlanSessionDetailOut",
 ]

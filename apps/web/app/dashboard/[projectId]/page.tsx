@@ -43,6 +43,14 @@ const FileTree = dynamic(
     loading: () => <Skeleton className="h-56 w-full" />,
   }
 );
+
+const ImplementationPlanner = dynamic(
+  () => import("@/components/implementation-planner").then((mod) => mod.ImplementationPlanner),
+  {
+    loading: () => <Skeleton className="h-[720px] w-full" />,
+    ssr: false,
+  }
+);
 import { GitHubRepoPicker } from "@/components/github-repo-picker";
 import { LanguageBreakdown } from "@/components/language-breakdown";
 import { Navbar } from "@/components/navbar";
@@ -104,7 +112,7 @@ export default function ProjectDetailPage({
 
   const [manualUrl, setManualUrl] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"explorer" | "chat">("explorer");
+  const [activeTab, setActiveTab] = useState<"explorer" | "chat" | "planner">("explorer");
 
   // Listen for file link clicks in Chat to automatically switch to the Explorer view
   useEffect(() => {
@@ -299,63 +307,79 @@ export default function ProjectDetailPage({
                       <button
                         type="button"
                         onClick={() => setActiveTab("explorer")}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 -mb-px transition-all",
-                          activeTab === "explorer"
-                            ? "border-primary text-foreground"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        Project Explorer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("chat")}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 -mb-px transition-all",
-                          activeTab === "chat"
-                            ? "border-primary text-foreground"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        Codebase Chat
-                      </button>
-                    </div>
+                          className={cn(
+                            "px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 -mb-px transition-all",
+                            activeTab === "explorer"
+                              ? "border-primary text-foreground"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Project Explorer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("chat")}
+                          className={cn(
+                            "px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 -mb-px transition-all",
+                            activeTab === "chat"
+                              ? "border-primary text-foreground"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Codebase Chat
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("planner")}
+                          className={cn(
+                            "px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 -mb-px transition-all",
+                            activeTab === "planner"
+                              ? "border-primary text-foreground"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Implementation Planner
+                        </button>
+                      </div>
 
-                    {activeTab === "explorer" ? (
-                      <div className="space-y-6 animate-in fade-in duration-250">
-                        <div className="flex gap-6 text-sm tabular-nums text-muted-foreground">
-                          <span>{repo.file_count} files</span>
-                          <span>{formatBytes(repo.total_size_bytes)}</span>
+                      {activeTab === "explorer" ? (
+                        <div className="space-y-6 animate-in fade-in duration-250">
+                          <div className="flex gap-6 text-sm tabular-nums text-muted-foreground">
+                            <span>{repo.file_count} files</span>
+                            <span>{formatBytes(repo.total_size_bytes)}</span>
+                          </div>
+
+                          {repo.languages && (
+                            <div>
+                              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Languages
+                              </h3>
+                              <LanguageBreakdown languages={repo.languages} />
+                            </div>
+                          )}
+
+                          <RepositoryIntelligence projectId={projectId} />
+
+                          {repo.file_tree && (
+                            <div>
+                              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                File Tree
+                              </h3>
+                              <FileTree tree={repo.file_tree} />
+                            </div>
+                          )}
+
+                          <ProjectCodeSearch projectId={projectId} />
                         </div>
-
-                        {repo.languages && (
-                          <div>
-                            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                              Languages
-                            </h3>
-                            <LanguageBreakdown languages={repo.languages} />
-                          </div>
-                        )}
-
-                        <RepositoryIntelligence projectId={projectId} />
-
-                        {repo.file_tree && (
-                          <div>
-                            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                              File Tree
-                            </h3>
-                            <FileTree tree={repo.file_tree} />
-                          </div>
-                        )}
-
-                        <ProjectCodeSearch projectId={projectId} />
-                      </div>
-                    ) : (
-                      <div className="animate-in fade-in duration-250">
-                        <CodebaseChat projectId={projectId} />
-                      </div>
-                    )}
+                      ) : activeTab === "chat" ? (
+                        <div className="animate-in fade-in duration-250">
+                          <CodebaseChat projectId={projectId} />
+                        </div>
+                      ) : (
+                        <div className="animate-in fade-in duration-250">
+                          <ImplementationPlanner projectId={projectId} />
+                        </div>
+                      )}
                   </div>
                 )}
               </CardContent>

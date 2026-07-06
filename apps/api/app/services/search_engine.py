@@ -82,23 +82,24 @@ class SemanticSearcher(Searcher):
             .limit(limit)
         )
         result = await db.execute(stmt)
-        hits = []
+        ranked_hits = []
         for row in result.fetchall():
             chunk = row[0]
             distance = row[1]
             score = 1.0 - distance if distance is not None else 0.0
-            
-            # Similarity threshold filtering (>= 0.35)
-            if score >= 0.35:
-                hits.append(SearchResult(
+            ranked_hits.append(
+                SearchResult(
                     file_path=chunk.file_path,
                     start_line=chunk.start_line,
                     end_line=chunk.end_line,
                     score=round(score, 4),
                     content=chunk.content,
                     searcher_type="semantic"
-                ))
-        return hits
+                )
+            )
+
+        strong_hits = [hit for hit in ranked_hits if hit.score >= 0.2]
+        return strong_hits if strong_hits else ranked_hits[: min(3, len(ranked_hits))]
 
 
 class TextSearcher(Searcher):

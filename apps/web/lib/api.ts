@@ -292,6 +292,26 @@ export type RegenerateResponse = {
   skipped: boolean;
 };
 
+export type ChatSession = {
+  id: string;
+  project_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ChatMessageOut = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  extra: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type ChatSessionDetail = ChatSession & {
+  messages: ChatMessageOut[];
+};
+
 export async function fetchAnalysis(
   getToken: GetToken,
   projectId: string,
@@ -305,5 +325,30 @@ export async function regenerateAnalysis(
 ): Promise<RegenerateResponse> {
   return apiFetch<RegenerateResponse>(`/api/projects/${projectId}/analysis/regenerate`, getToken, {
     method: "POST",
+  });
+}
+
+export async function fetchChatSessions(
+  getToken: GetToken,
+  projectId: string,
+): Promise<ChatSession[]> {
+  return apiFetch<ChatSession[]>(`/api/projects/${projectId}/chat/sessions`, getToken);
+}
+
+export async function fetchChatSession(
+  getToken: GetToken,
+  projectId: string,
+  sessionId: string,
+): Promise<ChatSessionDetail> {
+  return apiFetch<ChatSessionDetail>(`/api/projects/${projectId}/chat/sessions/${sessionId}`, getToken);
+}
+
+export async function deleteChatSession(
+  getToken: GetToken,
+  projectId: string,
+  sessionId: string,
+): Promise<void> {
+  await apiFetch<void>(`/api/projects/${projectId}/chat/sessions/${sessionId}`, getToken, {
+    method: "DELETE",
   });
 }

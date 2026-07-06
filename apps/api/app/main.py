@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
+from fastapi.exceptions import RequestValidationError
 
 from app.middleware.rate_limit import limiter
 from app.routes import admin, github, projects, repositories, search, webhooks, analysis, chat
@@ -69,6 +70,29 @@ async def log_requests(request: Request, call_next):
 
 
 # --- Standardized error handler ---
+@fastapi_app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Retrieve request body safely
+    body = b""
+    try:
+        body = await request.body()
+    except Exception:
+        pass
+    logger.error(
+        "request_validation_error",
+        method=request.method,
+        path=request.url.path,
+        errors=exc.errors(),
+        body=body.decode("utf-8", errors="ignore")
+    )
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": exc.errors(),
+            "body": body.decode("utf-8", errors="ignore")
+        }
+    )
+
 @fastapi_app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.error(

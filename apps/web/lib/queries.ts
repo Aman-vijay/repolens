@@ -7,17 +7,20 @@ import {
   attachRepository,
   createProject,
   deleteProject,
+  deleteChatSession,
   fetchAdminProjects,
   fetchAdminStats,
   fetchAdminUsers,
+  fetchAnalysis,
+  fetchChatSession,
+  fetchChatSessions,
   fetchGitHubRepos,
   fetchProject,
   fetchProjects,
   fetchRepository,
+  regenerateAnalysis,
   searchProjectCode,
   explainSearch,
-  fetchAnalysis,
-  regenerateAnalysis,
 } from "@/lib/api";
 
 export function useProjects() {
@@ -176,6 +179,37 @@ export function useRegenerateAnalysis() {
     mutationFn: (projectId: string) => regenerateAnalysis(getToken, projectId),
     onSuccess: (_data, projectId) => {
       queryClient.invalidateQueries({ queryKey: ["analysis", projectId] });
+    },
+  });
+}
+
+export function useChatSessions(projectId: string | undefined) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["chat-sessions", projectId],
+    queryFn: () => fetchChatSessions(getToken, projectId!),
+    enabled: !!projectId,
+  });
+}
+
+export function useChatSession(projectId: string | undefined, sessionId: string | null) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["chat-session", projectId, sessionId],
+    queryFn: () => fetchChatSession(getToken, projectId!, sessionId!),
+    enabled: !!projectId && !!sessionId,
+  });
+}
+
+export function useDeleteChatSession() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, sessionId }: { projectId: string; sessionId: string }) =>
+      deleteChatSession(getToken, projectId, sessionId),
+    onSuccess: (_data, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ["chat-sessions", projectId] });
     },
   });
 }

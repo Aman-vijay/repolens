@@ -47,22 +47,26 @@ const createUISlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], UI
 // --- Chat Slice ---
 export interface ChatSlice {
   chatThreads: Record<string, ChatMessage[]>;
+  activeChatSessionId: string | null;
   setChatMessages: (projectId: string, messages: ChatMessage[]) => void;
   clearChatThread: (projectId: string) => void;
+  setActiveChatSessionId: (sessionId: string | null) => void;
 }
 
 const createChatSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], ChatSlice> = (set) => ({
   chatThreads: {},
-  setChatMessages: (projectId, messages) => 
+  activeChatSessionId: null,
+  setChatMessages: (projectId, messages) =>
     set((state) => ({
       chatThreads: { ...state.chatThreads, [projectId]: messages }
     })),
-  clearChatThread: (projectId) => 
+  clearChatThread: (projectId) =>
     set((state) => {
       const copy = { ...state.chatThreads };
       delete copy[projectId];
       return { chatThreads: copy };
-    })
+    }),
+  setActiveChatSessionId: (sessionId) => set({ activeChatSessionId: sessionId }),
 });
 
 // --- Root Store ---
@@ -77,11 +81,10 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "repolens-storage",
-      partialize: (state) => ({ 
+partialize: (state) => ({
         activeProject: state.activeProject,
         activeRepository: state.activeRepository,
         activeAnalysis: state.activeAnalysis,
-        chatThreads: state.chatThreads,
       }),
     }
   )

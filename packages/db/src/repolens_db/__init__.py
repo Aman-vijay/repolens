@@ -1,9 +1,11 @@
 from repolens_db.base import Base
 from repolens_db.engine import get_async_session_factory, get_engine
-from repolens_db.models import CodeChunk, Project, Repository, User, RepositoryFile, RepositoryAnalysis
+from repolens_db.models import ChatMessage, ChatSession, CodeChunk, Project, Repository, RepositoryAnalysis, RepositoryFile, User
 
 __all__ = [
     "Base",
+    "ChatMessage",
+    "ChatSession",
     "CodeChunk",
     "Project",
     "Repository",

@@ -28,8 +28,13 @@ export function CreateProjectForm() {
   const setActiveProject = useAppStore((state) => state.setActiveProject);
   const clearActiveState = useAppStore((state) => state.clearActiveState);
 
+  const isNameDuplicate = (projectsList || []).some(
+    (p) => p.name.toLowerCase() === name.trim().toLowerCase()
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isNameDuplicate) return;
     mutation.mutate(
       { name, description },
       {
@@ -71,7 +76,13 @@ export function CreateProjectForm() {
               maxLength={255}
               placeholder="My awesome project\u2026"
               autoComplete="off"
+              className={isNameDuplicate ? "border-destructive focus-visible:ring-destructive" : ""}
             />
+            {isNameDuplicate && (
+              <p className="text-[11px] font-semibold text-destructive animate-in fade-in duration-200">
+                ⚠️ A project with this name already exists. Name must be unique.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description (optional)</Label>
@@ -85,7 +96,7 @@ export function CreateProjectForm() {
           </div>
           <Button
             type="submit"
-            disabled={mutation.isPending || name.trim().length === 0}
+            disabled={mutation.isPending || name.trim().length === 0 || isNameDuplicate}
             className="w-full"
           >
             {mutation.isPending ? "Creating\u2026" : "Create Project"}

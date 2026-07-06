@@ -2,7 +2,7 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -20,6 +20,18 @@ async def list_projects(db: AsyncSession, user: User) -> list[Project]:
 
 
 async def create_project(db: AsyncSession, user: User, data: ProjectCreate) -> Project:
+    # Check if a project with the same name already exists for this user (case-insensitive)
+    stmt = select(Project).where(
+        Project.user_id == user.id,
+        func.lower(Project.name) == func.lower(data.name),
+    )
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A project with this name already exists.",
+        )
+
     project = Project(
         user_id=user.id,
         name=data.name,
@@ -94,6 +106,18 @@ async def update_project(
     project = await get_owned_project_or_404(db, project_id, user)
     
     if data.name is not None:
+        # Check if a project with the same name already exists for this user (excluding this project)
+        stmt = select(Project).where(
+            Project.user_id == user.id,
+            func.lower(Project.name) == func.lower(data.name),
+            Project.id != project_id,
+        )
+        result = await db.execute(stmt)
+        if result.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A project with this name already exists.",
+            )
         project.name = data.name
     if data.description is not None:
         project.description = data.description

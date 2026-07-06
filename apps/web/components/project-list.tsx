@@ -74,9 +74,14 @@ function ProjectCard({ project }: { project: Project }) {
   const updateMutation = useUpdateProject();
   const deleteMutation = useDeleteProject();
 
+  const projectsList = useAppStore((state) => state.projectsList);
+  const isNameDuplicate = (projectsList || []).some(
+    (p) => p.id !== project.id && p.name.toLowerCase() === editName.trim().toLowerCase()
+  );
+
   const handleUpdateSubmit = () => {
     const trimmedName = editName.trim();
-    if (!trimmedName) return;
+    if (!trimmedName || isNameDuplicate) return;
 
     updateMutation.mutate(
       {
@@ -227,9 +232,16 @@ function ProjectCard({ project }: { project: Project }) {
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  className={`w-full rounded-md border bg-background/50 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary ${
+                    isNameDuplicate ? "border-destructive focus-visible:ring-destructive" : "border-input"
+                  }`}
                   maxLength={255}
                 />
+                {isNameDuplicate && (
+                  <p className="text-[11px] font-semibold text-destructive animate-in fade-in duration-200">
+                    ⚠️ A project with this name already exists. Name must be unique.
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">Description</label>
@@ -251,7 +263,7 @@ function ProjectCard({ project }: { project: Project }) {
               </button>
               <button
                 type="button"
-                disabled={updateMutation.isPending || !editName.trim()}
+                disabled={updateMutation.isPending || !editName.trim() || isNameDuplicate}
                 onClick={handleUpdateSubmit}
                 className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
               >

@@ -91,7 +91,7 @@ export default function ProjectDetailPage({
 }) {
   const { projectId } = use(params);
   const { data: queryProject, isPending: projectLoading } = useProject(projectId);
-  const { data: queryRepo } = useRepository(projectId);
+  const { data: queryRepo, isPending: repoLoading } = useRepository(projectId);
   const attachMutation = useAttachRepository();
   const deleteMutation = useDeleteProject();
   const router = useRouter();
@@ -128,6 +128,7 @@ export default function ProjectDetailPage({
   const project = (activeProject?.id === projectId) ? activeProject : queryProject;
   const repo = (activeRepository?.project_id === projectId) ? activeRepository : queryRepo;
   const isLoading = projectLoading && !project;
+  const isRepoLoading = repoLoading && !repo;
 
   const handleDelete = () => {
     deleteMutation.mutate(projectId, {
@@ -213,7 +214,9 @@ export default function ProjectDetailPage({
             Repository
           </h2>
 
-          {!repo && !isRepoPickerOpen && (
+          {isRepoLoading ? (
+            <Skeleton className="h-44 w-full" />
+          ) : !repo && !isRepoPickerOpen ? (
             <Card>
               <CardContent className="space-y-4 p-6">
                 <div className="space-y-2">
@@ -255,7 +258,7 @@ export default function ProjectDetailPage({
                 </div>
               </CardContent>
             </Card>
-          )}
+          ) : null}
 
           {isRepoPickerOpen && !repo && (
             <GitHubRepoPicker projectId={projectId} onClose={() => setRepoPickerOpen(false)} />

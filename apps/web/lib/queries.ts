@@ -82,6 +82,7 @@ export function useProject(projectId: string | undefined) {
     queryKey: ["project", projectId],
     queryFn: () => fetchProject(getToken, projectId!),
     enabled: !!projectId,
+    staleTime: 30 * 1000, // Serve instantly from cache if less than 30s old
   });
 }
 
@@ -105,6 +106,7 @@ export function useRepository(projectId: string | undefined) {
     queryKey: ["repository", projectId],
     queryFn: () => fetchRepository(getToken, projectId!),
     enabled: !!projectId,
+    staleTime: 15 * 1000, // Serve instantly from cache if less than 15s old
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       if (status === "pending" || status === "cloning") return 3000;

@@ -1,26 +1,29 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional, Literal, Any
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class ChatMessage(BaseModel):
     id: Optional[str] = None
     role: Literal["system", "user", "assistant", "tool"]
     content: str = ""
+    parts: list[dict[str, Any]] | None = None
 
-    @field_validator("content", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def extract_content_from_parts(cls, v, info):
-        """Handle Vercel AI SDK's UIMessage format where content comes as parts[]."""
-        if v:
-            return v
-        parts = info.data.get("parts")
-        if parts and isinstance(parts, list):
-            return "".join(
-                p.get("text", "") for p in parts if p.get("type") == "text"
-            )
-        return ""
+    def extract_content_from_parts(cls, data: Any) -> Any:
+        """Handle Vercel AI SDK's UIMessage format where content comes inside parts[]."""
+        if isinstance(data, dict):
+            content = data.get("content", "")
+            if not content:
+                parts = data.get("parts")
+                if parts and isinstance(parts, list):
+                    content = "".join(
+                        p.get("text", "") for p in parts if isinstance(p, dict) and p.get("type") == "text"
+                    )
+                    data["content"] = content
+        return data
 
 
 class ChatRequest(BaseModel):

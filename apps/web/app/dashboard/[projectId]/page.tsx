@@ -123,7 +123,7 @@ export default function ProjectDetailPage({
     return (
       <>
         <Navbar />
-        <main className="mx-auto max-w-4xl px-6 py-8">
+        <main className="mx-auto max-w-6xl px-6 py-8">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="mt-4 h-20 w-full" />
         </main>
@@ -135,7 +135,7 @@ export default function ProjectDetailPage({
     return (
       <>
         <Navbar />
-        <main className="mx-auto max-w-4xl px-6 py-8">
+        <main className="mx-auto max-w-6xl px-6 py-8">
           <p className="text-muted-foreground">Project not found.</p>
           <Button asChild variant="link" className="mt-4">
             <Link href="/dashboard">Back to dashboard</Link>
@@ -148,7 +148,7 @@ export default function ProjectDetailPage({
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-4xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-6 py-8">
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link href="/dashboard">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -156,7 +156,7 @@ export default function ProjectDetailPage({
           </Link>
         </Button>
 
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
             {project.description && (
@@ -169,7 +169,7 @@ export default function ProjectDetailPage({
             variant="destructive"
             size="sm"
             onClick={() => setIsDeleteDialogOpen(true)}
-            className="shrink-0"
+            className="sm:shrink-0 self-start"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete Project
@@ -186,7 +186,7 @@ export default function ProjectDetailPage({
               <CardContent className="space-y-4 p-6">
                 <div className="space-y-2">
                   <Label htmlFor="repo-url">Git URL</Label>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Input
                       id="repo-url"
                       type="url"
@@ -194,6 +194,7 @@ export default function ProjectDetailPage({
                       value={manualUrl}
                       onChange={(e) => setManualUrl(e.target.value)}
                       autoComplete="off"
+                      className="flex-1"
                     />
                     <Button
                       onClick={() => {

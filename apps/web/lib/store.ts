@@ -33,15 +33,19 @@ const createProjectSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [
 export interface UISlice {
   isRepoPickerOpen: boolean;
   globalSearchQuery: string;
+  isChatSidebarOpen: boolean;
   setRepoPickerOpen: (isOpen: boolean) => void;
   setGlobalSearchQuery: (query: string) => void;
+  setChatSidebarOpen: (isOpen: boolean) => void;
 }
 
 const createUISlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], UISlice> = (set) => ({
   isRepoPickerOpen: false,
   globalSearchQuery: "",
+  isChatSidebarOpen: true, // Default to open
   setRepoPickerOpen: (isOpen) => set({ isRepoPickerOpen: isOpen }),
   setGlobalSearchQuery: (query) => set({ globalSearchQuery: query }),
+  setChatSidebarOpen: (isOpen) => set({ isChatSidebarOpen: isOpen }),
 });
 
 // --- Chat Slice ---
@@ -81,10 +85,11 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "repolens-storage",
-partialize: (state) => ({
+      partialize: (state) => ({
         activeProject: state.activeProject,
         activeRepository: state.activeRepository,
         activeAnalysis: state.activeAnalysis,
+        isChatSidebarOpen: state.isChatSidebarOpen,
       }),
     }
   )

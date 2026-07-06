@@ -7,6 +7,7 @@ import {
   attachRepository,
   createProject,
   deleteProject,
+  updateProject,
   deleteChatSession,
   fetchAdminProjects,
   fetchAdminStats,
@@ -52,6 +53,25 @@ export function useDeleteProject() {
     mutationFn: (projectId: string) => deleteProject(getToken, projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+export function useUpdateProject() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      input,
+    }: {
+      projectId: string;
+      input: { name?: string; description?: string | null };
+    }) => updateProject(getToken, projectId, input),
+    onSuccess: (updatedProject) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project", updatedProject.id] });
     },
   });
 }

@@ -15,6 +15,7 @@ Lifecycle order on every request:
 """
 from app.schemas.project import (
     ProjectCreate,
+    ProjectUpdate,
     ProjectDetailOut,
     ProjectOut,
 )
@@ -37,6 +38,7 @@ from app.schemas.search import (
 
 __all__ = [
     "ProjectCreate",
+    "ProjectUpdate",
     "ProjectOut",
     "ProjectDetailOut",
     "RepositoryCreate",

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.schemas import ProjectCreate
+from app.schemas import ProjectCreate, ProjectUpdate
 from repolens_db import Project, Repository, User
 
 
@@ -83,3 +83,21 @@ async def delete_project(
         
     await db.delete(project)
     await db.commit()
+
+
+async def update_project(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    user: User,
+    data: ProjectUpdate,
+) -> Project:
+    project = await get_owned_project_or_404(db, project_id, user)
+    
+    if data.name is not None:
+        project.name = data.name
+    if data.description is not None:
+        project.description = data.description
+        
+    await db.commit()
+    await db.refresh(project)
+    return project

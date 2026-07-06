@@ -161,6 +161,17 @@ export async function deleteProject(
   });
 }
 
+export async function updateProject(
+  getToken: GetToken,
+  projectId: string,
+  input: { name?: string; description?: string | null },
+): Promise<Project> {
+  return apiFetch<Project>(`/api/projects/${projectId}`, getToken, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function fetchProject(
   getToken: GetToken,
   projectId: string,

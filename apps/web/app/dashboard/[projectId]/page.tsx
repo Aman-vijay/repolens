@@ -13,13 +13,39 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { FileTree } from "@/components/file-tree";
+import dynamic from "next/dynamic";
+
+const CodebaseChat = dynamic(
+  () => import("@/components/codebase-chat").then((mod) => mod.CodebaseChat),
+  {
+    loading: () => <Skeleton className="h-[680px] w-full" />,
+    ssr: false,
+  }
+);
+
+const RepositoryIntelligence = dynamic(
+  () => import("@/components/repository-intelligence").then((mod) => mod.RepositoryIntelligence),
+  {
+    loading: () => <Skeleton className="h-48 w-full" />,
+  }
+);
+
+const ProjectCodeSearch = dynamic(
+  () => import("@/components/project-code-search").then((mod) => mod.ProjectCodeSearch),
+  {
+    loading: () => <Skeleton className="h-28 w-full" />,
+  }
+);
+
+const FileTree = dynamic(
+  () => import("@/components/file-tree").then((mod) => mod.FileTree),
+  {
+    loading: () => <Skeleton className="h-56 w-full" />,
+  }
+);
 import { GitHubRepoPicker } from "@/components/github-repo-picker";
 import { LanguageBreakdown } from "@/components/language-breakdown";
 import { Navbar } from "@/components/navbar";
-import { ProjectCodeSearch } from "@/components/project-code-search";
-import { RepositoryIntelligence } from "@/components/repository-intelligence";
-import { CodebaseChat } from "@/components/codebase-chat";
 import {
   useAttachRepository,
   useProject,

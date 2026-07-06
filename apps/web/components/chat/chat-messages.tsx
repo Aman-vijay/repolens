@@ -2,6 +2,7 @@
 
 import { FileText, User, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ChatMessagesProps {
   messages: any[];
@@ -94,26 +95,26 @@ export function ChatMessages({
       <div className="space-y-6 py-4 animate-in fade-in duration-300">
         {/* User Skeleton Message bubble */}
         <div className="flex justify-end gap-3 px-1">
-          <div className="max-w-[70%] rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-pulse space-y-2 w-48">
-            <div className="h-2.5 w-1/3 rounded bg-primary/20" />
-            <div className="h-3 w-full rounded bg-primary/10" />
+          <div className="max-w-[70%] rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 space-y-2 w-48">
+            <Skeleton className="h-2.5 w-1/3" />
+            <Skeleton className="h-3 w-full" />
           </div>
         </div>
 
         {/* Agent Skeleton Message bubble */}
         <div className="flex justify-start gap-3 px-1">
-          <div className="max-w-[85%] rounded-xl border border-border bg-card/20 px-4 py-3 animate-pulse space-y-3 w-[420px]">
+          <div className="max-w-[85%] rounded-xl border border-border bg-card/20 px-4 py-3 space-y-3 w-[420px]">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-md bg-muted" />
+              <Skeleton className="h-6 w-6 rounded-md" />
               <div className="space-y-1">
-                <div className="h-2.5 w-12 rounded bg-muted" />
-                <div className="h-2 w-32 rounded bg-muted/65" />
+                <Skeleton className="h-2.5 w-12" />
+                <Skeleton className="h-2 w-32" />
               </div>
             </div>
             <div className="space-y-2 pt-1 border-t border-border/40">
-              <div className="h-3.5 w-full rounded bg-muted" />
-              <div className="h-3.5 w-11/12 rounded bg-muted" />
-              <div className="h-3.5 w-4/5 rounded bg-muted" />
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-11/12" />
+              <Skeleton className="h-3.5 w-4/5" />
             </div>
           </div>
         </div>

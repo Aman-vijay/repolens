@@ -3,6 +3,7 @@
 import { MessageSquare, Plus, Trash2, Loader2, History, ChevronLeft, PanelLeftClose } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ChatHistorySidebarProps {
   sessions: any[] | undefined;
@@ -84,12 +85,12 @@ export function ChatHistorySidebar({
           Array.from({ length: 4 }).map((_, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-3 rounded-md border border-border/40 bg-background/25 px-3 py-2.5 animate-pulse"
+              className="flex items-center gap-3 rounded-md border border-border/40 bg-background/25 px-3 py-2.5"
             >
-              <div className="h-3.5 w-3.5 rounded-full bg-muted" />
+              <Skeleton className="h-3.5 w-3.5 rounded-full" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-3 w-3/4 rounded bg-muted" />
-                <div className="h-2 w-1/4 rounded bg-muted" />
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-2 w-1/4" />
               </div>
             </div>
           ))

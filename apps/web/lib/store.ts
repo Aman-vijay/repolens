@@ -52,14 +52,17 @@ const createUISlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], UI
 export interface ChatSlice {
   chatThreads: Record<string, ChatMessage[]>;
   activeChatSessionId: string | null;
+  cachedSessions: Record<string, any[]>;
   setChatMessages: (projectId: string, messages: ChatMessage[]) => void;
   clearChatThread: (projectId: string) => void;
   setActiveChatSessionId: (sessionId: string | null) => void;
+  setCachedSessions: (projectId: string, sessions: any[]) => void;
 }
 
 const createChatSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], ChatSlice> = (set) => ({
   chatThreads: {},
   activeChatSessionId: null,
+  cachedSessions: {},
   setChatMessages: (projectId, messages) =>
     set((state) => ({
       chatThreads: { ...state.chatThreads, [projectId]: messages }
@@ -71,6 +74,10 @@ const createChatSlice: StateCreator<ProjectSlice & UISlice & ChatSlice, [], [], 
       return { chatThreads: copy };
     }),
   setActiveChatSessionId: (sessionId) => set({ activeChatSessionId: sessionId }),
+  setCachedSessions: (projectId, sessions) =>
+    set((state) => ({
+      cachedSessions: { ...state.cachedSessions, [projectId]: sessions }
+    })),
 });
 
 // --- Root Store ---
@@ -90,6 +97,7 @@ export const useAppStore = create<AppState>()(
         activeRepository: state.activeRepository,
         activeAnalysis: state.activeAnalysis,
         isChatSidebarOpen: state.isChatSidebarOpen,
+        cachedSessions: state.cachedSessions,
       }),
     }
   )

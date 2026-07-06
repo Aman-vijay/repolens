@@ -50,9 +50,21 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
     activeAnalysis,
     isChatSidebarOpen,
     setChatSidebarOpen,
+    cachedSessions,
+    setCachedSessions,
   } = useAppStore();
-  const { data: sessions, isPending: sessionsLoading } = useChatSessions(projectId);
+  const { data: querySessions, isPending: sessionsQueryLoading } = useChatSessions(projectId);
   const deleteSessionMutation = useDeleteChatSession();
+
+  // Sync fresh React Query session data into Zustand cache
+  useEffect(() => {
+    if (querySessions) {
+      setCachedSessions(projectId, querySessions);
+    }
+  }, [querySessions, projectId, setCachedSessions]);
+
+  const sessions = querySessions || cachedSessions[projectId] || [];
+  const sessionsLoading = sessionsQueryLoading && (!cachedSessions[projectId] || cachedSessions[projectId].length === 0);
 
   // Local state
   const [input, setInput] = useState("");

@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { useAuth } from "@clerk/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
-import { 
+import {
   ArrowUp,
   Bot,
   Brain,
@@ -14,13 +15,19 @@ import {
   FileText,
   GitBranch,
   HelpCircle,
-  Loader2, 
+  Loader2,
+  MessageSquare,
+  Plus,
   RotateCcw,
-  Sparkles, 
+  Sparkles,
+  Trash2,
   User,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { useAppStore } from "@/lib/store";
+import { useChatSessions, useDeleteChatSession } from "@/lib/queries";
+import type { ChatMessageOut } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -104,26 +111,29 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
   const { getToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  
-  const { chatThreads, setChatMessages, clearChatThread, activeAnalysis } = useAppStore();
-  const persistedMessages = chatThreads[projectId] || [];
+  const queryClient = useQueryClient();
 
-  // 1. Declare state for input and chatData (traces)
+  const { activeChatSessionId, setActiveChatSessionId, activeAnalysis } = useAppStore();
+  const { data: sessions, isPending: sessionsLoading } = useChatSessions(projectId);
+  const deleteSessionMutation = useDeleteChatSession();
+
+  // Local state for input and chat traces
   const [input, setInput] = useState("");
   const [chatData, setChatData] = useState<any[]>([]);
+  const [showSessionList, setShowSessionList] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
 
-  const { 
-    messages, 
-    sendMessage, 
-    status, 
+  const {
+    messages,
+    sendMessage,
+    status,
     setMessages,
-    stop 
+    stop,
   } = useChat({
-    messages: persistedMessages as any,
+    messages: [] as any,
     transport: new DefaultChatTransport({
       api: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/projects/${projectId}/chat`,
       fetch: async (url, init) => {
@@ -133,13 +143,13 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
           headers: {
             ...init?.headers,
             Authorization: `Bearer ${token}`,
-          }
+          },
         });
-      }
+      },
     }),
     onFinish: ({ messages: newMessages }) => {
-      // Save updated messages thread to local Zustand store
-      setChatMessages(projectId, newMessages as any);
+      // Invalidate sessions query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["chat-sessions", projectId] });
     },
     onData: (dataPart: any) => {
       if (dataPart && dataPart.type === "trace") {
@@ -149,17 +159,48 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
       } else {
         setChatData(prev => [...prev, dataPart]);
       }
-    }
+    },
   });
 
   const isLoading = status === "submitted" || status === "streaming";
   const failurePrefix = "I could not gather enough grounded repository evidence";
 
   useEffect(() => {
-    setMessages(persistedMessages as any);
+    setMessages([]);
     setChatData([]);
     setInput("");
-  }, [persistedMessages, projectId, setMessages]);
+  }, [projectId, setMessages]);
+
+  // Load a session's messages when activeChatSessionId changes
+  useEffect(() => {
+    if (!activeChatSessionId) {
+      setMessages([]);
+      setChatData([]);
+      return;
+    }
+    (async () => {
+      const token = await getToken();
+      if (!token) return;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      try {
+        const res = await fetch(
+          `${API_URL}/api/projects/${projectId}/chat/sessions/${activeChatSessionId}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        if (!res.ok) return;
+        const detail = await res.json();
+        const sessionMessages: any[] = (detail.messages || []).map((m: ChatMessageOut) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          parts: [{ type: "text", text: m.content }],
+        }));
+        setMessages(sessionMessages);
+      } catch {
+        // ignore
+      }
+    })();
+  }, [activeChatSessionId, projectId, getToken, setMessages]);
 
   useEffect(() => {
     const textarea = inputRef.current;
@@ -241,9 +282,36 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
   };
 
   const handleClearHistory = () => {
-    clearChatThread(projectId);
+    if (activeChatSessionId) {
+      deleteSessionMutation.mutate(
+        { projectId, sessionId: activeChatSessionId },
+        {
+          onSuccess: () => {
+            setActiveChatSessionId(null);
+            setMessages([]);
+            setChatData([]);
+            toast.success("Chat session deleted.");
+          },
+          onError: () => toast.error("Failed to delete session."),
+        },
+      );
+    } else {
+      setMessages([]);
+      setChatData([]);
+    }
+  };
+
+  const handleNewChat = () => {
+    setActiveChatSessionId(null);
     setMessages([]);
     setChatData([]);
+    setInput("");
+    setShowSessionList(false);
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    setActiveChatSessionId(sessionId);
+    setShowSessionList(false);
   };
 
   // Extract streamed data logs (retrieval traces)
@@ -324,22 +392,71 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
                 <span>{thinkingStage}</span>
               </div>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNewChat}
+              className="h-8 rounded-md px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              New Chat
+            </Button>
+            {sessions && sessions.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSessionList((v) => !v)}
+                className="h-8 rounded-md px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
+                aria-label="Toggle chat history"
+              >
+                <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+                History
+              </Button>
+            )}
             {messages.length > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleClearHistory}
                 className="h-8 rounded-md px-2.5 text-[11px] text-muted-foreground hover:text-destructive"
               >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Clear Thread
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Delete
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Messages Scroll Area */}
+      {/* Session List Dropdown */}
+      {showSessionList && sessions && sessions.length > 0 && (
+        <div className="border-b border-border bg-card/40 px-5 py-3">
+          <div className="max-h-48 overflow-auto space-y-1">
+            {sessions.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                onClick={() => handleSelectSession(session.id)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors hover:bg-muted/50",
+                  activeChatSessionId === session.id
+                    ? "border-primary/30 bg-primary/10 text-foreground"
+                    : "border-border/60 bg-background/40 text-muted-foreground",
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate">{session.title}</span>
+                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                  {new Date(session.updated_at).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <ScrollArea className="flex-1 bg-background/30">
         <div className="space-y-5 px-5 py-5">
           {messages.length === 0 && (

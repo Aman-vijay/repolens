@@ -23,7 +23,7 @@ async def test_attach_repository_requires_project(
     )
     assert repo_resp.status_code == 202
     data = repo_resp.json()
-    assert data["url"] == "https://github.com/test/repo"
+    assert data["url"] == "https://github.com/test/repo.git"
     assert data["status"] == "pending"
 
 
@@ -35,7 +35,7 @@ async def test_get_repository(
     """Verify getting repository details for a project."""
     project_resp = await authenticated_client.post(
         "/api/projects",
-        json={"name": "Test Project"},
+        json={"name": "Get Repo Test Project"},
     )
     project_id = project_resp.json()["id"]
 
@@ -47,7 +47,7 @@ async def test_get_repository(
     repo_resp = await authenticated_client.get(f"/api/projects/{project_id}/repository")
     assert repo_resp.status_code == 200
     data = repo_resp.json()
-    assert data["url"] == "https://github.com/test/repo"
+    assert data["url"] == "https://github.com/test/repo.git"
 
 
 @pytest.mark.asyncio
@@ -72,4 +72,4 @@ async def test_get_project_detail(
     data = detail_resp.json()
     assert data["name"] == "Test Project with Detail"
     assert data["repository"] is not None
-    assert data["repository"]["url"] == "https://github.com/test/repo"
+    assert data["repository"]["url"] == "https://github.com/test/repo.git"

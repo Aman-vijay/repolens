@@ -24,23 +24,20 @@ class TestChatGrounding:
         assert evidence_count == 0
 
 
-class TestChatStreaming:
-    """Test chat streaming endpoint behavior."""
+@pytest.mark.asyncio
+async def test_chat_requires_project(
+    authenticated_client: AsyncClient,
+    db_session: AsyncSession,
+):
+    """Test that chat endpoint works when project has repository."""
+    project_resp = await authenticated_client.post(
+        "/api/projects",
+        json={"name": "Chat Test Project"},
+    )
+    project_id = project_resp.json()["id"]
 
-    @pytest.mark.asyncio
-    async def test_chat_requires_project(
-        authenticated_client: AsyncClient,
-        db_session: AsyncSession,
-    ):
-        """Test that chat endpoint works when project has repository."""
-        project_resp = await authenticated_client.post(
-            "/api/projects",
-            json={"name": "Chat Test Project"},
-        )
-        project_id = project_resp.json()["id"]
-
-        response = await authenticated_client.get(f"/api/projects/{project_id}/chat/sessions")
-        assert response.status_code == 200
+    response = await authenticated_client.get(f"/api/projects/{project_id}/chat/sessions")
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio

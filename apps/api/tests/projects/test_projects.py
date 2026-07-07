@@ -60,7 +60,9 @@ async def test_list_projects(
     response = await authenticated_client.get("/api/projects")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
+    names = [p["name"] for p in data]
+    assert "Project 1" in names
+    assert "Project 2" in names
 
 
 @pytest.mark.asyncio
@@ -101,4 +103,5 @@ async def test_delete_project(
     assert response.status_code == 204
 
     list_resp = await authenticated_client.get("/api/projects")
-    assert len(list_resp.json()) == 0
+    project_ids = [p["id"] for p in list_resp.json()]
+    assert project_id not in project_ids

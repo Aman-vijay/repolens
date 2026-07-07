@@ -87,6 +87,7 @@ export function ChatInput({
                 variant="destructive"
                 size="sm"
                 onClick={onStop}
+                aria-label="Stop generation"
                 className="h-8 rounded-md px-3.5 text-xs font-semibold shadow-sm transition-all duration-200"
               >
                 Stop
@@ -96,9 +97,10 @@ export function ChatInput({
                 type="submit"
                 size="icon"
                 disabled={!input.trim()}
+                aria-label="Send message"
                 className="h-8 w-8 rounded-md shadow-sm transition-all duration-200"
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-4 w-4" aria-hidden="true" />
               </Button>
             )}
           </div>

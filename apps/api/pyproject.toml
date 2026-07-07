@@ -26,3 +26,14 @@ dependencies = [
 [tool.uv.sources]
 repolens-db = { workspace = true }
 repolens-prompts = { workspace = true }
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-mock>=3.12",
+    "pytest-cov>=4.1",
+    "httpx>=0.27",
+    "testcontainers[postgres]>=4.0",
+    "fakeredis>=2.20",
+]

@@ -2,7 +2,11 @@
 
 ## Overview
 
-RepoLens helps engineers understand and plan changes in unfamiliar codebases. Four features: repository import, AI-generated repo understanding, repo chat, implementation planning (plans only, never generated code).
+RepoLens helps engineers understand and plan changes in unfamiliar codebases. Four core features:
+1. **Repository Import** - Clone and index any public GitHub repository
+2. **AI Analysis** - Generate executive summaries, tech stack, and entry points
+3. **Codebase Chat** - Ask questions grounded in actual repository code
+4. **Implementation Planner** - Generate structured feature plans with checklists
 
 This document tracks the high-level architecture. Detailed decisions live in `docs/adr/`.
 
@@ -19,6 +23,7 @@ flowchart LR
   end
   subgraph packages
     DBK[packages/db<br/>shared kernel]
+    PRM[packages/prompts<br/>Jinja2 templates]
   end
   subgraph "Managed — dev and prod, different projects"
     PG[(Neon<br/>Postgres+pgvector)]
@@ -26,33 +31,96 @@ flowchart LR
   end
   Web -->|HTTP| API
   API --> DBK
+  API --> PRM
   W --> DBK
+  W --> PRM
   DBK -->|SQL| PG
   API -->|Redis protocol| RD
   W -->|Redis protocol| RD
+  API -->|OpenAI API| OpenAI[(OpenAI<br/>GPT-4o-mini)]
+  W -->|OpenAI API| OpenAI
 ```
 
-## Dev/prod parity
+## Data Models
 
-The same code talks to the same *kind* of managed service in dev and prod; only credentials/project differ. Infra-axis parity is strong — Neon manages pgvector identically in both environments. Remaining parity debt is on the app-runtime axis (native dev vs containerized prod on Vercel/Render), explicitly closed in Milestone 8. See ADR 0001.
+```
+┌─────────────┐       ┌─────────────┐
+│    User     │───────│   Project   │
+└─────────────┘  1:N  └─────────────┘
+                           │
+                           │ 1:1
+                           ▼
+                    ┌─────────────┐
+                    │ Repository  │
+                    └─────────────┘
+                           │
+            ┌──────────────┼──────────────┐
+            │              │              │
+            ▼              ▼              ▼
+     ┌────────────┐ ┌────────────┐ ┌────────────┐
+     │ CodeChunk │ │KeyFile     │ │Analysis    │
+     │(embedding)│ │            │ │            │
+     └────────────┘ └────────────┘ └────────────┘
 
-## Components
+     ┌────────────┐       ┌────────────┐
+     │ ChatSession│───────│ChatMessage │
+     └────────────┘  1:N  └────────────┘
 
-| Component | Location | Role |
-|-----------|----------|------|
-| Web | `apps/web` | Next.js frontend, deployed to Vercel |
-| API | `apps/api` | FastAPI backend, deployed to Render |
-| Workers | `workers/` | ARQ background jobs (repo clone, embedding, summary), deployed to Render |
-| DB kernel | `packages/db` | SQLAlchemy models + session/engine; shared peer dependency of API and Workers |
-| Postgres | Neon | Primary store + pgvector embeddings |
-| Redis | Upstash | ARQ job queue transport |
+     ┌────────────┐       ┌────────────┐
+     │PlanSession │───────│PlanVersion │
+     └────────────┘  1:N  └────────────┘
+```
 
-`apps/api` and `workers/` are **peers**: both depend on `packages/db`, neither depends on the other. See ADR 0001.
+## Key Architectural Decisions
 
-## Milestone progress
+| ADR | Decision |
+|-----|----------|
+| 0001 | Monorepo layout with peer API/Workers architecture |
+| 0004 | Neon (Postgres+pgvector) + Upstash Redis for managed infra |
+| 0017 | ARQ durable queue for background processing |
+| 0020 | Semantic search via chunking, embeddings, and pgvector cosine distance |
 
-- **M0 — Foundation** (done): monorepo skeleton, workspace manifests, secrets contract, architecture docs and ADRs.
-- **M1 — Authentication** (done): Clerk auth, User/Project models, FastAPI backend, Next.js frontend, TanStack Query, CI build-smoke, Makefile targets.
-- **M2 — Repository upload** (done): Repository model, shallow clone service, metadata extraction, GitHub repo picker, admin dashboard, GitHub-only auth.
-- **M3 — Worker** (current): ARQ durable queue, progress tracking, `make worker` target.
-- M4–M8 — see `README.md`.
+## Request Lifecycles
+
+### Repository Import Flow
+```
+1. User submits GitHub URL
+2. API validates URL → enqueues clone job
+3. Worker clones repo → extracts files → creates chunks
+4. Worker generates embeddings → upserts to pgvector
+5. Worker enqueues analysis job
+6. Analysis LLM generates summary → stores in DB
+7. Web polls for status updates
+```
+
+### Chat Flow
+```
+1. User sends message
+2. API retrieves relevant chunks (embedding similarity)
+3. Chunks + history → OpenAI streaming API
+4. SSE response → frontend displays incrementally
+5. Final message persisted to DB
+```
+
+## Testing Strategy
+
+| Layer | Tool | Location |
+|-------|------|----------|
+| Unit Tests | pytest + pytest-mock | `apps/api/tests/` |
+| Integration | Testcontainers (Postgres+Redis) | `apps/api/tests/` |
+| API Validation | httpx + ASGITransport | `apps/api/tests/` |
+| Frontend Unit | Vitest + React Testing Library | `apps/web/tests/` |
+| E2E | Playwright | `apps/web/tests/e2e/` |
+
+## Security
+
+- **CORS**: Restricted to configured frontend URL
+- **Authentication**: Clerk JWT validation on all API routes
+- **Authorization**: Project ownership checks on all data operations
+- **Input Validation**: Pydantic schemas for all API inputs
+- **Prompt Injection**: Grounding context prevents hallucinated file references
+- **XSS**: Markdown rendering sanitizes code blocks
+
+## Milestone Status
+
+All milestones M0–M8 are complete. See `README.md` for full feature list.

@@ -71,6 +71,22 @@ function ProjectCard({ project }: { project: Project }) {
   const [editName, setEditName] = useState(project.name);
   const [editDescription, setEditDescription] = useState(project.description ?? "");
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsEditing(false);
+        setIsDeleting(false);
+        setShowMenu(false);
+      }
+    };
+    if (isEditing || isDeleting || showMenu) {
+      document.addEventListener("keydown", handleEscape);
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isEditing, isDeleting, showMenu]);
+
   const updateMutation = useUpdateProject();
   const deleteMutation = useDeleteProject();
 

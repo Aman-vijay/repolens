@@ -19,18 +19,16 @@ if app_env.exists():
 
 
 class Settings(BaseSettings):
-    clerk_secret_key: str = ""
-    clerk_webhook_secret: str = ""
-    frontend_url: str = "http://localhost:3000"
-    superadmin_clerk_user_id: str = ""
-    redis_url: str = ""
+    clerk_secret_key: str
+    clerk_webhook_secret: str
+    frontend_url: str
+    superadmin_clerk_user_id: str
+    redis_url: str
 
     @property
     def cors_origins(self) -> list[str]:
         origins = {
             self.frontend_url.rstrip("/"),
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
         }
         return sorted(origin for origin in origins if origin)
 

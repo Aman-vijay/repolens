@@ -7,7 +7,7 @@ async def main():
     # Load database URL from environment or fallback to user's Neon connection
     url = os.environ.get("DATABASE_URL")
     if not url:
-        url = "postgresql+asyncpg://neondb_owner:npg_zFn0Sc6BCPGh@ep-purple-boat-at9dg4rq-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+        raise RuntimeError("DATABASE_URL environment variable is not set")
     
     # Standardize connection string for asyncpg
     url = url.replace("postgresql+asyncpg://", "postgresql://")

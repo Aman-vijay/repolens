@@ -12,8 +12,10 @@ _pool = None
 
 def _parse_redis_settings(redis_url: str) -> RedisSettings:
     parsed = urlparse(redis_url)
+    if not parsed.hostname:
+        raise ValueError("Invalid Redis URL: hostname is missing")
     return RedisSettings(
-        host=parsed.hostname or "localhost",
+        host=parsed.hostname,
         port=parsed.port or 6379,
         password=parsed.password or None,
         ssl=parsed.scheme == "rediss",

@@ -82,7 +82,13 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
   } = useChat({
     messages: [] as any,
     transport: new DefaultChatTransport({
-      api: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/projects/${projectId}/chat`,
+      api: (() => {
+        const api_url = process.env.NEXT_PUBLIC_API_URL;
+        if (!api_url) {
+          throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
+        }
+        return `${api_url}/api/projects/${projectId}/chat`;
+      })(),
       fetch: async (url, init) => {
         const token = await getToken();
         return fetch(url, {
@@ -133,7 +139,10 @@ export function CodebaseChat({ projectId }: { projectId: string }) {
         setIsMessagesLoading(false);
         return;
       }
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+      if (!API_URL) {
+        throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
+      }
       try {
         const res = await fetch(
           `${API_URL}/api/projects/${projectId}/chat/sessions/${activeChatSessionId}`,

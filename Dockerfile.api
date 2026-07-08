@@ -7,9 +7,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY uv.lock pyproject.toml ./
+COPY apps/api/pyproject.toml apps/api/
+COPY workers/pyproject.toml workers/
+COPY packages/db/pyproject.toml packages/db/
+COPY packages/prompts/pyproject.toml packages/prompts/
 RUN pip install uv && uv python install 3.12 && uv sync --frozen --no-install-project --all-packages --python 3.12
 
 COPY . .
+
+WORKDIR /app/apps/api
 
 EXPOSE 8000
 

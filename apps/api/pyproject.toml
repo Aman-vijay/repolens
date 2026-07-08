@@ -2,7 +2,7 @@
 name = "repolens-api"
 version = "0.1.0"
 description = "RepoLens FastAPI backend"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "repolens-db",
     "alembic>=1.13",

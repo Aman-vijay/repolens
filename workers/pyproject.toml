@@ -2,7 +2,7 @@
 name = "repolens-workers"
 version = "0.1.0"
 description = "RepoLens ARQ background workers"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "repolens-db",
     "arq>=0.26",

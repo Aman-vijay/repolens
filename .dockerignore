@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+.venv
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build artifacts
+*.egg-info
+dist
+build
+
+# Test & coverage
+.pytest_cache
+.coverage
+htmlcov
+
+# Next.js
+.next
+out
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Environment (keep .env.example, not actual secrets)
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache
+__pycache__
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs
+README.md
+CHANGELOG.md
+
+# Evaluation (not needed in production)
+evaluation
+.fallow

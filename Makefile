@@ -1,4 +1,5 @@
 .PHONY: help sync clean api web worker dev test lint typecheck build db-migrate db-revision
+.PHONY: docker-up docker-down docker-logs docker-build docker-shell docker-migrate
 
 help: ## Show available targets
 	@echo "RepoLens targets:"
@@ -14,6 +15,12 @@ help: ## Show available targets
 	@echo "  build       Production build-smoke (Next.js + FastAPI import check)"
 	@echo "  db-migrate  Run Alembic migrations"
 	@echo "  db-revision Create a new Alembic revision (msg=<name>)"
+	@echo "  docker-up       Start all services with Docker Compose"
+	@echo "  docker-down     Stop all Docker services"
+	@echo "  docker-logs     View Docker logs (follow=false)"
+	@echo "  docker-build     Rebuild Docker images"
+	@echo "  docker-shell     Open shell in API container"
+	@echo "  docker-migrate   Run migrations in Docker"
 
 sync: ## Install all dependencies (all workspace packages)
 	uv sync --all-packages
@@ -56,3 +63,27 @@ db-migrate: ## Run Alembic migrations
 
 db-revision: ## Create a new Alembic revision: make db-revision msg="add users"
 	cd apps/api && uv run alembic revision --autogenerate -m "$(msg)"
+
+docker-up: ## Start all services with Docker Compose
+	docker compose up -d
+	@echo "Waiting for services to be healthy..."
+	@sleep 10
+	@echo "Services started:"
+	@echo "  API:    http://localhost:8000"
+	@echo "  Web:    http://localhost:3000"
+	@echo "  Docs:   http://localhost:8000/docs"
+
+docker-down: ## Stop all Docker services
+	docker compose down
+
+docker-logs: ## View Docker logs
+	docker compose logs -f
+
+docker-build: ## Rebuild Docker images (no cache)
+	docker compose build --no-cache
+
+docker-shell: ## Open shell in API container
+	docker compose exec api /bin/sh
+
+docker-migrate: ## Run migrations in Docker
+	docker compose exec api python -m alembic upgrade head

@@ -4,7 +4,7 @@ A tool that helps engineers understand and plan changes in unfamiliar codebases.
 
 ## Status
 
-Current implementation is in Milestone 4 (Embedding): repository cloning, metadata extraction, ARQ worker orchestration, code chunking, embeddings storage, and dashboard semantic code search are in place. Milestone 5 (AI summary) is the next major build step.
+**All milestones M0–M8 are complete.** RepoLens is production-ready.
 
 ## Stack
 
@@ -18,30 +18,64 @@ Current implementation is in Milestone 4 (Embedding): repository cloning, metada
 
 ## Repository layout
 
-    apps/web        Next.js frontend
-    apps/api        FastAPI backend
-    workers/        ARQ background workers
-    packages/db     shared DB kernel (SQLAlchemy models + session) — peer to apps/api and workers/
-    docs/adr/       architecture decision records
+```
+apps/web        Next.js frontend
+apps/api        FastAPI backend
+workers/        ARQ background workers
+packages/db     shared DB kernel (SQLAlchemy models + session)
+packages/prompts Jinja2 prompt templates
+docs/adr/       architecture decision records
+docs/deployment/ deployment checklists
+docs/postmortem/ project retrospective & demo guide
+```
 
-`apps/api` and `workers/` are peers: both depend on `packages/db`, neither depends on the other. See ADR 0001.
+`apps/api` and `workers/` are peers: both depend on `packages/db`, neither depends on the other.
 
-## Setup
+## Quick Start (Native)
 
-1. Copy `.env.example` to `.env` and fill in credentials (see ADR 0006 for the per-environment secret supply story).
-2. Python workspace: `uv sync` at repo root.
-3. Node workspace: `pnpm install` at repo root.
+```bash
+# 1. Install dependencies
+make sync
 
-Application code lands in Milestone 1 onward.
+# 2. Copy and fill environment variables
+cp .env.example .env
+
+# 3. Run all services
+make api    # Terminal 1
+make web    # Terminal 2
+make worker # Terminal 3
+```
+
+## Quick Start (Docker)
+
+```bash
+# 1. Copy and fill environment variables
+cp .env.docker .env
+
+# 2. Start all services
+make docker-up
+
+# 3. Run migrations (first time only)
+make docker-migrate
+```
+
+Services will be available at:
+- **API:** http://localhost:8000
+- **Web:** http://localhost:3000
+- **API Docs:** http://localhost:8000/docs
+
+## Deployment
+
+See [docs/deployment/checklists.md](docs/deployment/checklists.md) for step-by-step deployment to Vercel, Render, Neon, and Upstash.
 
 ## Milestones
 
-0. Architecture — docs, ADRs, folder structure, secrets contract
-1. Authentication — Users, Projects, Dashboard (Clerk)
-2. Repository upload — Clone, Metadata, DB
-3. Worker — Queue, Status, Progress (ARQ)
-4. Embedding — Chunking, Vector, Search (pgvector)
-5. AI Summary — Architecture, Tech stack, Entry points
-6. Chat — Streaming, History
-7. Implementation Planner
-8. Polish — Animations, Tests, Deployment
+- [x] M0: Architecture — docs, ADRs, folder structure, secrets contract
+- [x] M1: Authentication — Users, Projects, Dashboard (Clerk)
+- [x] M2: Repository upload — Clone, Metadata, DB
+- [x] M3: Worker — Queue, Status, Progress (ARQ)
+- [x] M4: Embedding — Chunking, Vector, Search (pgvector)
+- [x] M5: AI Summary — Architecture, Tech stack, Entry points
+- [x] M6: Chat — Streaming, History
+- [x] M7: Implementation Planner
+- [x] M8: Polish — Animations, Tests, Deployment

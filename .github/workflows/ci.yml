@@ -18,6 +18,10 @@ jobs:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_c3VwZXItZ2xvd3dvcm0tNzcuY2xlcmsuYWNjb3VudHMuZGV2JA' }}
       CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY || 'sk_test_dummy' }}
       NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8000' }}
+      CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET || 'whsec_test_dummy' }}
+      FRONTEND_URL: ${{ secrets.FRONTEND_URL || 'http://localhost:3000' }}
+      SUPERADMIN_CLERK_USER_ID: ${{ secrets.SUPERADMIN_CLERK_USER_ID || 'user_test_dummy' }}
+      REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
